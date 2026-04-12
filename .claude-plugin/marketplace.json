@@ -1,0 +1,17 @@
+{
+  "name": "waggy-shopify-theme-plugin",
+  "owner": { "name": "waggy" },
+  "metadata": {
+    "description": "Shopify theme development workflow plugin for Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "shopify-theme-dev",
+      "source": "./",
+      "description": "Shopify theme development: analyze → plan → implement → verify",
+      "version": "0.1.0",
+      "author": { "name": "waggy" },
+      "license": "MIT"
+    }
+  ]
+}

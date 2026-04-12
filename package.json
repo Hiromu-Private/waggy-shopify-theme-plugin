@@ -1,0 +1,9 @@
+{
+  "name": "shopify-theme-dev",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shopify theme development workflow plugin for Claude Code",
+  "author": "waggy",
+  "license": "MIT",
+  "keywords": ["shopify", "theme", "liquid", "section", "verification"]
+}

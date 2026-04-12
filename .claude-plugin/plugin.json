@@ -1,0 +1,8 @@
+{
+  "name": "shopify-theme-dev",
+  "version": "0.1.0",
+  "description": "Shopify theme development workflow — analyze themes, plan sections, implement with guardrails, verify with Playwright. Complements shopify-ai-toolkit with hands-on theme dev skills.",
+  "author": { "name": "waggy" },
+  "license": "MIT",
+  "keywords": ["shopify", "theme", "liquid", "section", "schema", "playwright", "verification"]
+}
