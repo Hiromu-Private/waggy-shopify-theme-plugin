@@ -9,7 +9,7 @@ Shopifyテーマ開発のための Claude Code プラグイン。テーマ分析
 Claude Code のチャットで以下を実行:
 
 ```
-/plugin marketplace add waggy/shopify-theme-plugin
+/plugin marketplace add Hiromu-Private/waggy-shopify-theme-plugin
 /plugin install shopify-theme-dev@waggy-shopify-theme-plugin
 ```
 
