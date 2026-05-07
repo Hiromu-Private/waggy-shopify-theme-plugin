@@ -69,5 +69,5 @@ New file prefix: c- (sections/c-*.liquid, assets/c-*.css, snippets/c-*-*.liquid)
 CSS scoping: #shopify-section-{{ section.id }}
 
 Full details: document/theme-profile.md
-Guided workflow: /shopify-dev
+Guided workflow: /theme-orchestrator
 EOF

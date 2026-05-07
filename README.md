@@ -41,7 +41,7 @@ Claude Code のチャットで以下を実行:
                │
                ▼
 ┌─────────────────────────────┐
-│  /shopify-dev                │  設計書に基づき実装
+│  /theme-orchestrator         │  設計書に基づき実装
 │  （内部で schema-validator    │  ガードレール付き
 │    を自動呼び出し）           │
 └──────────────┬──────────────┘
@@ -60,8 +60,8 @@ Claude Code のチャットで以下を実行:
 |--------|---------|------|------|
 | **shopify-theme-analyzer** | `テーマを分析して` / `theme analyze` | テーマソースコード | `document/theme-profile.md` + `.claude/shopify-verify.config.json` |
 | **shopify-section-planner** | `セクションを設計して` / `section plan` | 要件テキスト or Figma URL | `document/c-*-spec.md` |
-| **shopify-dev** | `セクションを実装して` / `shopify-dev` | 設計書 or 直接指示 | `.liquid`, `.css`, `.js` ファイル |
-| **shopify-schema-validator** | shopify-dev から自動呼び出し | `.liquid` ファイル | コンソールエラーレポート |
+| **theme-orchestrator** | `セクションを実装して` / `theme-orchestrator` | 設計書 or 直接指示 | `.liquid`, `.css`, `.js` ファイル |
+| **shopify-schema-validator** | theme-orchestrator から自動呼び出し | `.liquid` ファイル | コンソールエラーレポート |
 
 ### 自動検証の仕組み
 
@@ -145,7 +145,7 @@ monolith (❌)                  modular (✅)
 
 **単一責任**: 各スキルが1つの明確な仕事を持つ。analyzer はテーマを読むだけ。planner は設計書を書くだけ。dev は実装するだけ。validator は検証するだけ。
 
-**独立実行**: 既存テーマで急ぎの修正が必要なら `/shopify-dev` だけ使える。新規セクションを設計だけしたいなら `/shopify-section-planner` だけ使える。全フロー回す必要がない。
+**独立実行**: 既存テーマで急ぎの修正が必要なら `/theme-orchestrator` だけ使える。新規セクションを設計だけしたいなら `/shopify-section-planner` だけ使える。全フロー回す必要がない。
 
 **コンテキスト効率**: 各スキルは必要な情報だけロードする。analyzer の重い分析結果は `theme-profile.md` にシリアライズされ、後続スキルはそれを読むだけ。
 
@@ -153,7 +153,7 @@ monolith (❌)                  modular (✅)
 
 | 種類 | いつ動く | 誰が起動する | 例 |
 |------|---------|-------------|-----|
-| **Skill** | ユーザーが明示的に呼ぶ | ユーザー | `/shopify-dev` |
+| **Skill** | ユーザーが明示的に呼ぶ | ユーザー | `/theme-orchestrator` |
 | **Hook** | ツール実行やイベントで自動 | Claude Code ランタイム | ファイル編集時に記録 |
 | **Agent** | Hook がブロックして指示 | Hook → メインエージェント | 検証+自動修正 |
 
@@ -341,7 +341,7 @@ skills/
 │   └── references/
 │       ├── schema-setting-types.md
 │       └── output-template.md
-├── shopify-dev/                実装オーケストレーター
+├── theme-orchestrator/         実装オーケストレーター
 │   ├── SKILL.md
 │   └── references/
 │       ├── implementation-guide.md

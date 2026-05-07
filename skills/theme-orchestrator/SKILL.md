@@ -1,9 +1,9 @@
 ---
-name: shopify-dev
-description: "Shopifyテーマ開発の統合ワークフロー。セクション新規作成・実装、既存セクション修正、CSS/JS追加をテーマプロファイルに基づいて一貫して管理。ガードレール付き。使用タイミング：「セクションを作って」「セクションを実装して」「CSSを追加して」「Shopify開発」「shopify-dev」「liquidを書いて」「セクション修正」。shopify-section-implementerの後継。前提：shopify-theme-analyzerでテーマ分析済みであること。"
+name: theme-orchestrator
+description: "Shopifyテーマ開発の統合ワークフロー。セクション新規作成・実装、既存セクション修正、CSS/JS追加をテーマプロファイルに基づいて一貫して管理。ガードレール付き。使用タイミング：「セクションを作って」「セクションを実装して」「CSSを追加して」「テーマ実装」「theme-orchestrator」「liquidを書いて」「セクション修正」。shopify-section-implementerの後継。前提：shopify-theme-analyzerでテーマ分析済みであること。"
 ---
 
-# Shopify Dev - テーマ開発オーケストレーター
+# Theme Orchestrator - Shopifyテーマ開発オーケストレーター
 
 テーマプロファイルに基づき、Shopifyテーマのセクション作成・修正・CSS/JS追加を一貫したワークフローで実行する。
 
