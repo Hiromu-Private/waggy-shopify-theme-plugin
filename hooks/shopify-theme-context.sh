@@ -1,11 +1,16 @@
 #!/bin/bash
 # SessionStart Hook: Shopifyテーマプロファイルの要約を自動注入
-# document/theme-profile.md が存在するプロジェクトでのみ出力
+# docs/theme-profile.md (新パス) または document/theme-profile.md (旧パス) が
+# 存在するプロジェクトでのみ出力
 
-PROFILE="$PWD/document/theme-profile.md"
-
-# 非Shopifyプロジェクトでは無音
-if [ ! -f "$PROFILE" ]; then
+if [ -f "$PWD/docs/theme-profile.md" ]; then
+  PROFILE="$PWD/docs/theme-profile.md"
+  PROFILE_REL="docs/theme-profile.md"
+elif [ -f "$PWD/document/theme-profile.md" ]; then
+  PROFILE="$PWD/document/theme-profile.md"
+  PROFILE_REL="document/theme-profile.md"
+else
+  # 非Shopifyプロジェクトでは無音
   exit 0
 fi
 
@@ -68,6 +73,6 @@ Custom elements: ${elements}
 New file prefix: c- (sections/c-*.liquid, assets/c-*.css, snippets/c-*-*.liquid)
 CSS scoping: #shopify-section-{{ section.id }}
 
-Full details: document/theme-profile.md
+Full details: ${PROFILE_REL}
 Guided workflow: /theme-orchestrator
 EOF

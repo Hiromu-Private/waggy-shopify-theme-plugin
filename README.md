@@ -58,8 +58,9 @@ Claude Code のチャットで以下を実行:
 
 | スキル | トリガー | 入力 | 出力 |
 |--------|---------|------|------|
-| **shopify-theme-analyzer** | `テーマを分析して` / `theme analyze` | テーマソースコード | `document/theme-profile.md` + `.claude/shopify-verify.config.json` |
-| **shopify-section-planner** | `セクションを設計して` / `section plan` | 要件テキスト or Figma URL | `document/c-*-spec.md` |
+| **shopify-theme-init** | `テーマ初期化` / `クリーンアップ` / `.gitignore作って` | 既存テーマ or 新規CLI生成テーマ | `.gitignore` + `.shopifyignore` + `docs/` 構造 |
+| **shopify-theme-analyzer** | `テーマを分析して` / `theme analyze` | テーマソースコード | `docs/theme-profile.md` + `.claude/shopify-verify.config.json` |
+| **shopify-section-planner** | `セクションを設計して` / `section plan` | 要件テキスト or Figma URL | `docs/c-*-spec.md` |
 | **theme-orchestrator** | `セクションを実装して` / `theme-orchestrator` | 設計書 or 直接指示 | `.liquid`, `.css`, `.js` ファイル |
 | **shopify-schema-validator** | theme-orchestrator から自動呼び出し | `.liquid` ファイル | コンソールエラーレポート |
 
@@ -80,13 +81,15 @@ Claude Code のチャットで以下を実行:
 新しいShopifyテーマプロジェクトを始めるとき:
 
 ```
-1. /shopify-theme-analyzer を実行
-   → document/theme-profile.md が生成される
+1. /shopify-theme-init を実行（既存ゴミ整理、.gitignore / docs/ 構造を整える）
+
+2. /shopify-theme-analyzer を実行
+   → docs/theme-profile.md が生成される
    → .claude/shopify-verify.config.json が生成される
 
-2. shopify theme dev でプレビューURLを取得
+3. shopify theme dev でプレビューURLを取得
 
-3. .claude/shopify-verify.config.json の preview_url を設定
+4. .claude/shopify-verify.config.json の preview_url を設定
 ```
 
 ### shopify-verify.config.json
