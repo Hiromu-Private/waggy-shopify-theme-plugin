@@ -63,6 +63,9 @@ Claude Code のチャットで以下を実行:
 | **shopify-section-planner** | `セクションを設計して` / `section plan` | 要件テキスト or Figma URL | `docs/c-*-spec.md` |
 | **theme-orchestrator** | `セクションを実装して` / `theme-orchestrator` | 設計書 or 直接指示 | `.liquid`, `.css`, `.js` ファイル |
 | **shopify-schema-validator** | theme-orchestrator から自動呼び出し | `.liquid` ファイル | コンソールエラーレポート |
+| **shopify-theme-brand-layer** | `Brand 層を作りたい` / `brand-*.css 作って` / `Figma デザインをテーマに反映` / `テーマアップデートに耐える上書き方法` | Figma URL + 既存テーマ | `assets/brand-*.css` + `snippets/brand-icons.liquid` + `document/design-system.md` |
+
+**shopify-theme-brand-layer** は他 4 スキルと並列に位置する**横断スキル**。analyze 後にブランド固有の見た目を Layer 3（`brand-*` 名前空間）として実装する設計プロセスを提供する。テーマアップデートに耐える 4 レイヤー構造（Focal 標準 / 設定値 / Brand 層 / 新規セクション）と命名規則を含む。
 
 ### 自動検証の仕組み
 
@@ -350,12 +353,23 @@ skills/
 │       ├── implementation-guide.md
 │       ├── modification-guide.md
 │       └── css-js-guide.md
-└── shopify-schema-validator/   Schema検証
+├── shopify-schema-validator/   Schema検証
+│   ├── SKILL.md
+│   ├── scripts/validate_schema.py
+│   └── references/
+│       ├── setting-types.md
+│       └── section-schema-rules.md
+└── shopify-theme-brand-layer/  Brand 層（Layer 3）設計・実装プロセス
     ├── SKILL.md
-    ├── scripts/validate_schema.py
-    └── references/
-        ├── setting-types.md
-        └── section-schema-rules.md
+    ├── references/
+    │   ├── layer-architecture.md      4 レイヤー構造と判断フロー
+    │   ├── naming-conventions.md      brand-* 命名規則
+    │   ├── override-strategies.md     値上書き / modifier / icon 分岐の 3 パターン
+    │   ├── verification-patterns.md   同値クラス分割 + Playwright 検証
+    │   └── pitfalls.md                6 つの実証済み落とし穴
+    └── templates/
+        ├── design-system-skeleton.md  §0〜§12 章建てテンプレート
+        └── brand-icons-template.liquid 5 アイコン case 雛形
 
 hooks/
 ├── hooks.json                  Hook自動登録

@@ -1,0 +1,89 @@
+{%- comment -%}
+  Layer 3: Brand override icons.
+  Figma 由来の SVG をここに列挙し、テーマ既定アイコン（snippets/icon.liquid）を上書きする。
+  ここに無い `icon` 名は blank を返し、icon.liquid の case 文にフォールスルーする。
+
+  Accepts:
+    - icon: {String} - icon name (required)
+    - width: {Number} - width override (optional, default 16)
+    - height: {Number} - height override (optional, default 16)
+    - class: {String} - extra class names (optional)
+    - inline: {Boolean} - add icon--inline modifier (optional)
+    - direction_aware: {Boolean} - add icon--direction-aware modifier for RTL (optional)
+
+  See: document/design-system.md §5 Icon カタログ
+
+  使い方:
+    1. このファイルを snippets/brand-icons.liquid にコピー
+    2. 必要なアイコンの case 文だけ残し、Figma 由来の SVG path に書き換え
+    3. snippets/icon.liquid 冒頭に Brand override 分岐を追加（references/override-strategies.md の Step B 参照）
+{%- endcomment -%}
+
+{%- capture icon_class -%}icon icon--{{ icon }} icon--brand{% if inline %} icon--inline{% endif %}{% if direction_aware %} icon--direction-aware{% endif %}{% if class %} {{ class }}{% endif %}{%- endcapture -%}
+
+{%- case icon -%}
+
+  {%- comment -%} ====================================================
+    例 1: 矢印（右）
+    Figma node: 1:236 / Icon / Arrow (16×16, currentColor)
+    細い線の右矢印（軸 + V字先端）
+  ==================================================== {%- endcomment -%}
+  {%- when 'nav-arrow-right' -%}
+    <svg focusable="false" width="{{ width | default: 16 }}" height="{{ height | default: 16 }}" class="{{ icon_class }}" viewBox="0 0 16 16" fill="none">
+      <path d="M2 8h12M9 3l5 5-5 5" stroke="currentColor" stroke-width="1" stroke-linecap="square" stroke-linejoin="miter"></path>
+    </svg>
+
+  {%- comment -%} ====================================================
+    例 2: 矢印（左 = 右をミラーした静的 SVG）
+    案 A 採用: 別 SVG として独立保持（CSS transform は使わない）
+    理由: アクセシビリティ・SSR FOUC への配慮（Heroicons / Lucide も同じパターン）
+  ==================================================== {%- endcomment -%}
+  {%- when 'nav-arrow-left' -%}
+    <svg focusable="false" width="{{ width | default: 16 }}" height="{{ height | default: 16 }}" class="{{ icon_class }}" viewBox="0 0 16 16" fill="none">
+      <path d="M14 8H2M7 3L2 8l5 5" stroke="currentColor" stroke-width="1" stroke-linecap="square" stroke-linejoin="miter"></path>
+    </svg>
+
+  {%- comment -%} ====================================================
+    例 3: Plus（+ 記号）
+    Figma node: 4:550 / Icon / Plus (16×16, currentColor)
+    1px 厚の 10px 線 2 本（中心交差）
+  ==================================================== {%- endcomment -%}
+  {%- when 'plus' -%}
+    <svg focusable="false" width="{{ width | default: 16 }}" height="{{ height | default: 16 }}" class="{{ icon_class }}" viewBox="0 0 16 16">
+      <rect x="3" y="7.5" width="10" height="1" fill="currentColor"></rect>
+      <rect x="7.5" y="3" width="1" height="10" fill="currentColor"></rect>
+    </svg>
+
+  {%- comment -%} ====================================================
+    例 4: Minus（- 記号）
+    Figma node: 4:551 / Icon / Minus (16×16, currentColor)
+    1px 厚の 10px 横線 1 本
+  ==================================================== {%- endcomment -%}
+  {%- when 'minus' -%}
+    <svg focusable="false" width="{{ width | default: 16 }}" height="{{ height | default: 16 }}" class="{{ icon_class }}" viewBox="0 0 16 16">
+      <rect x="3" y="7.5" width="10" height="1" fill="currentColor"></rect>
+    </svg>
+
+  {%- comment -%} ====================================================
+    例 5: External link（外部リンク矢印）
+    Figma node: 1:106 / Icon / External link (16×16, currentColor)
+    細い線の右上矢印（軸 + V字先端）
+    Focal 標準には存在しないアイコン（新規追加）
+    色は使う側で `color: rgb(var(--brand-gray))` などで指定可能
+  ==================================================== {%- endcomment -%}
+  {%- when 'external-link' -%}
+    <svg focusable="false" width="{{ width | default: 16 }}" height="{{ height | default: 16 }}" class="{{ icon_class }}" viewBox="0 0 16 16" fill="none">
+      <path d="M5 3h8v8M13 3L4 12" stroke="currentColor" stroke-width="1" stroke-linecap="square" stroke-linejoin="miter"></path>
+    </svg>
+
+  {%- comment -%} ====================================================
+    新しい Brand override アイコンを追加する時の雛形:
+
+    {%- when 'icon-name-here' -%}
+      {%- comment -%} Figma node {NODE_ID} / Icon / {NAME} (16×16, {COLOR}) {%- endcomment -%}
+      <svg focusable="false" width="{{ width | default: 16 }}" height="{{ height | default: 16 }}" class="{{ icon_class }}" viewBox="0 0 16 16" fill="none">
+        <!-- Figma から書き出した SVG パスをここに -->
+      </svg>
+  ==================================================== {%- endcomment -%}
+
+{%- endcase -%}
