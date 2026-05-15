@@ -84,6 +84,8 @@ CSS重複防止方式: [パターンA / パターンB]
 | フィールド | 値の決定方法 |
 |-----------|------------|
 | `preview_url` | 空文字列（`shopify theme dev` 実行時にユーザーが手動設定） |
+| `verify_mode` | `"smart"`（デフォルト）。値: `manual` / `smart` / `auto` のいずれか |
+| `smart_diff_threshold` | `50`（smart モードで「大きな変更」と判定する行数閾値） |
 | `max_verify_cycles` | `2`（固定） |
 | `max_urls_per_run` | `5`（固定） |
 | `viewports` | `[{mobile: 375}, {tablet: 768}, {desktop: 1280}]`（固定） |
@@ -92,6 +94,18 @@ CSS重複防止方式: [パターンA / パターンB]
 | `template_url_mappings` | `templates/` ディレクトリのJSONファイルからジェネリックルールで自動生成 |
 | `noise_baselines` | 空配列（ストア固有ノイズは実行時に判明するため初期値なし） |
 | `universal_noise` | `true` |
+
+**verify_mode の3モード:**
+
+| モード | 挙動 | 推奨用途 |
+|---|---|---|
+| `manual` | Stop hook は自動発火しない。`verify-please` / `verify-now` / `検証して` を含むメッセージのときだけ起動 | 検証を完全に手動コントロールしたい人向け |
+| `smart` (デフォルト) | 大きな変更のみ自動検証。判定: ①新規 `.liquid` ファイル作成、②`git diff HEAD --numstat` の合計が `smart_diff_threshold` 超え | コメントやスタイル微調整では走らず、実装変更時だけ走らせたい人向け |
+| `auto` | 記録された Shopify ファイル編集が1件でもあれば必ず起動（旧挙動） | セーフティ最優先 |
+
+3モードとも以下のキーワードでオーバーライド可能:
+- **強制スキップ**: `skip-verify` / `--no-verify` / `確認不要` / `検証スキップ`
+- **強制実行**: `verify-please` / `verify-now` / `検証して`
 
 **template_url_mappings 自動生成ルール:**
 

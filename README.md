@@ -72,10 +72,30 @@ Claude Code のチャットで以下を実行:
 3つの Hook と 1つの Agent が連携して、テーマファイル編集後の検証を自動化する:
 
 1. **shopify-verify-record.sh** (PostToolUse) — Write/Edit のたびに、編集がShopifyテーマファイルかを判定し記録
-2. **shopify-verify-trigger.sh** (Stop) — ターン終了時に編集記録を確認。あれば停止をブロックし verifier agent の起動を指示
+2. **shopify-verify-trigger.sh** (Stop) — ターン終了時に編集記録を確認。**`verify_mode` 設定**に従って起動可否を判定し、起動が必要なら停止をブロックして verifier agent の起動を指示
 3. **shopify-verifier agent** — Liquid/Schema バリデーション → Playwright でプレビュー検証 → エラー自動修正 → 構造化レポート
 
-**バイパス**: ユーザーが `確認不要` / `--no-verify` / `skip-verify` と入力すれば検証をスキップできる。
+#### verify_mode の3モード
+
+| モード | 挙動 |
+|---|---|
+| `manual` | 自動発火しない。強制実行キーワードでだけ起動 |
+| `smart` (デフォルト) | 大きな変更（新規 `.liquid` 作成 or diff > `smart_diff_threshold` 行）のときだけ自動起動 |
+| `auto` | 記録された Shopify 編集が1件でもあれば起動（旧挙動） |
+
+3モードとも以下のキーワードで挙動を上書きできる:
+
+- **強制スキップ**: `skip-verify` / `--no-verify` / `確認不要` / `検証スキップ`
+- **強制実行**: `verify-please` / `verify-now` / `検証して`
+
+設定例:
+
+```json
+{
+  "verify_mode": "smart",
+  "smart_diff_threshold": 50
+}
+```
 
 ---
 
@@ -102,6 +122,8 @@ Claude Code のチャットで以下を実行:
 ```json
 {
   "preview_url": "https://xxx.shopifypreview.com",
+  "verify_mode": "smart",
+  "smart_diff_threshold": 50,
   "max_verify_cycles": 2,
   "max_urls_per_run": 5,
   "viewports": [
@@ -127,9 +149,11 @@ Claude Code のチャットで以下を実行:
 | フィールド | 説明 |
 |-----------|------|
 | `preview_url` | `shopify theme dev` のプレビューURL。空なら検証スキップ |
+| `verify_mode` | 自動検証の発火モード。`manual` / `smart` (default) / `auto` |
+| `smart_diff_threshold` | `smart` モードで「大きな変更」と判定する diff 行数（add+delete 合計）。デフォルト `50` |
 | `forbidden_files` | 絶対に編集してはいけないファイル。analyzer が自動検出 |
 | `template_url_mappings` | テンプレート→URL のストア固有マッピング |
-| `noise_baselines` | ストア固有の既知ノイズ（3rd-party等）。検証��に除外 |
+| `noise_baselines` | ストア固有の既知ノイズ（3rd-party等）。検証時に除外 |
 | `universal_noise` | Shopify共通ノイズ（Web Pixel 404等）も自動除外 |
 
 ---
