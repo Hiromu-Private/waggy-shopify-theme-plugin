@@ -64,8 +64,11 @@ Claude Code のチャットで以下を実行:
 | **theme-orchestrator** | `セクションを実装して` / `theme-orchestrator` | 設計書 or 直接指示 | `.liquid`, `.css`, `.js` ファイル |
 | **shopify-schema-validator** | theme-orchestrator から自動呼び出し | `.liquid` ファイル | コンソールエラーレポート |
 | **shopify-theme-brand-layer** | `Brand 層を作りたい` / `brand-*.css 作って` / `Figma デザインをテーマに反映` / `テーマアップデートに耐える上書き方法` | Figma URL + 既存テーマ | `assets/brand-*.css` + `snippets/brand-icons.liquid` + `document/design-system.md` |
+| **shopify-flow-builder** | `Shopify Flow 作って` / `Order paid トリガー` / `顧客MF自動更新` / `クーポン使用検知` / `.flow ファイル` | トリガー要件 + Run Code ロジック | `.flow` JSON テンプレート + Visual Builder 構築手順 |
 
 **shopify-theme-brand-layer** は他 4 スキルと並列に位置する**横断スキル**。analyze 後にブランド固有の見た目を Layer 3（`brand-*` 名前空間）として実装する設計プロセスを提供する。テーマアップデートに耐える 4 レイヤー構造（Focal 標準 / 設定値 / Brand 層 / 新規セクション）と命名規則を含む。
+
+**shopify-flow-builder** はテーマ開発ワークフローとは別軸の**Shopify Flow 自動化スキル**。Order paid / Order created などのトリガーから、Run Code を中心軸とした判定ロジック・顧客メタフィールド更新・タグ付与・割引コード検知などを `.flow` JSON テンプレート付きで構築する。
 
 ### 自動検証の仕組み
 
@@ -383,17 +386,30 @@ skills/
 │   └── references/
 │       ├── setting-types.md
 │       └── section-schema-rules.md
-└── shopify-theme-brand-layer/  Brand 層（Layer 3）設計・実装プロセス
+├── shopify-theme-brand-layer/  Brand 層（Layer 3）設計・実装プロセス
+│   ├── SKILL.md
+│   ├── references/
+│   │   ├── layer-architecture.md      4 レイヤー構造と判断フロー
+│   │   ├── naming-conventions.md      brand-* 命名規則
+│   │   ├── override-strategies.md     値上書き / modifier / icon 分岐の 3 パターン
+│   │   ├── verification-patterns.md   同値クラス分割 + Playwright 検証
+│   │   └── pitfalls.md                6 つの実証済み落とし穴
+│   └── templates/
+│       ├── design-system-skeleton.md  §0〜§12 章建てテンプレート
+│       └── brand-icons-template.liquid 5 アイコン case 雛形
+└── shopify-flow-builder/       Shopify Flow（.flow JSON）ゼロ構築スキル
     ├── SKILL.md
     ├── references/
-    │   ├── layer-architecture.md      4 レイヤー構造と判断フロー
-    │   ├── naming-conventions.md      brand-* 命名規則
-    │   ├── override-strategies.md     値上書き / modifier / icon 分岐の 3 パターン
-    │   ├── verification-patterns.md   同値クラス分割 + Playwright 検証
-    │   └── pitfalls.md                6 つの実証済み落とし穴
-    └── templates/
-        ├── design-system-skeleton.md  §0〜§12 章建てテンプレート
-        └── brand-icons-template.liquid 5 アイコン case 雛形
+    │   ├── triggers.md                  主要トリガー一覧と context
+    │   ├── run-code-patterns.md         Run Code 中心の判定ロジック雛形
+    │   ├── customer-metafield-actions.md 顧客MF更新アクションのパターン
+    │   ├── flow-export-versioning.md    .flow JSON の Git 管理運用
+    │   └── anti-patterns.md             Condition 階層化など典型ハマり所
+    ├── templates/
+    │   ├── order-paid-to-customer-mf.flow      Order paid → 顧客MF
+    │   └── order-created-discount-clear-mf.flow Order created → Discount検知
+    └── evals/
+        └── evals.json                   発火・出力テストケース
 
 hooks/
 ├── hooks.json                  Hook自動登録

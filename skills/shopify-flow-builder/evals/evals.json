@@ -1,0 +1,26 @@
+{
+  "skill_name": "shopify-flow-builder",
+  "evals": [
+    {
+      "id": 1,
+      "name": "build-vip-status-flow",
+      "prompt": "Shopify Flow で、注文金額（税込・送料抜き・割引後の小計）が10万円以上 *かつ* Furniture タグの商品を1つ以上含む注文があったときに、その顧客の `custom.vip_status` メタフィールド（single_line_text_field）に `\"Gold\"` を書き込む Flow を作りたいです。Shopify Admin の Flow Editor で実装する手順と、Run Code のコード（Input GraphQL / JavaScript / Output SDL の3点セット）を提示してください。保存時の状態（OFF / ON のどちらにするか）と、その理由にも触れてください。",
+      "expected_output": "Order paid トリガー、Run Code で Furniture タグ判定 + 金額比較（parseFloat 必須）、Condition で eligible == true 判定、Update customer metafield アクションの構造を提示。OFF 保存の必要性に言及。Run Code の3点セットを完備。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "discount-code-tag-customer",
+      "prompt": "Shopify Flow で、`WELCOME10` という Discount コードが使われた注文が作成された時に、その注文の顧客に `first-discount-used` というタグを追加したいです（既に同じタグが付いていれば二重付与は不要）。Flow の構造（トリガー・条件・アクション）と、Run Code を使うべきかどうかの判断、コード例を提示してください。大文字小文字の扱いにも気を付けてください。",
+      "expected_output": "Order created トリガー、Run Code で discountCodes 配列を toUpperCase 正規化して `WELCOME10` 照合、Condition、Add customer tags アクションの構造。冪等性（既存タグの再付与）にも触れる。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "debug-decimal-comparison",
+      "prompt": "Shopify Flow で次のような Condition を組んでいます: 「If order.currentSubtotalPriceSet.shopMoney.amount is less than 100000」。これで「10万円未満なら2000円クーポン、10万以上なら3000円」を分岐させたいのですが、なぜか100万円の注文でも2000円の枝に行ってしまいます。何が原因で、どう直せばよいでしょうか？",
+      "expected_output": "GraphQL Decimal 型が文字列として渡ることを指摘（'1000000.0' を `< 100000` で文字列比較すると辞書順比較になり常に true 系の挙動）。Run Code アクションに移して parseFloat で数値化してから比較する解決策。",
+      "files": []
+    }
+  ]
+}
