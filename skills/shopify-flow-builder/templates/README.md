@@ -64,6 +64,42 @@ Remove customer metafield (custom.thanks_coupon_granted_at)
 - 顧客 MF Definition が事前作成済み
 - 該当する Discount コード（例: `THANKS2000` 等）が Admin > Discounts で作成済み
 
+### `scheduled-channel-auto-publish.md`（構造ドキュメント）
+
+「販売開始日（メタフィールド）を過ぎた商品を、複数 Sales channel（Meta / Google / Online Store 等）に自動公開する」Flow の **構造ドキュメント**。
+
+`.flow` JSON ではなく Markdown で配布する理由:
+
+- `.flow` は内部に SHA256 ハッシュを持ち、外部生成すると Import 失敗のリスクがある
+- Publication ID は **ストアごとに異なる固有値** で、テンプレートとして配布する `.flow` には埋め込めない（プレースホルダにすると Import で弾かれる）
+- このため Admin UI で構築するための **ステップ定義** として提供する
+
+**構造:**
+```
+Scheduled time (0 * * * *)
+   ↓
+Get product list (metafields.<ns>.<key>:<=NOW AND NOT tag:"<marker>" ...)
+   ↓
+For Each productList.products
+   ├─ Branch 1: If NOT tag:"meta公開" → Publish to Meta → Add tag "meta公開"
+   ├─ Branch 2: If NOT tag:"google公開" → Publish to Google → Add tag "google公開"
+   └─ Branch N: （必要なチャネル数だけ複製）
+```
+
+**カスタマイズポイント:**
+
+| 変更したい箇所 | 編集対象 |
+|---|---|
+| 判定メタフィールド | Get product list の query の `metafields.<ns>.<key>` |
+| 完了マーカータグ名 | Condition と Add product tags の値、Get product list の query の `NOT tag:` |
+| 公開先チャネル数 | For Each 内のブランチ数 |
+| Publication ID | Publish product アクションの値 |
+| 実行頻度 | Scheduled time の cron |
+
+**プラン要件:** Shopify Basic 以上で動作（Run Code 不使用）。
+
+**実装後の流れ:** Admin で構築 → Run history で動作確認 → エクスポートしてストア専用リポに `.flow` として保存。本スキルの templates/ に汎用化版を後追いコミットしても良い（Publication ID をプレースホルダ化）。
+
 ## 使い方
 
 1. Admin > Apps > Flow > ワークフロー一覧画面の `インポート` ボタンをクリック
