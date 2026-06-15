@@ -62,6 +62,7 @@ Claude Code のチャットで以下を実行:
 | **shopify-theme-analyzer** | `テーマを分析して` / `theme analyze` | テーマソースコード | `docs/theme-profile.md` + `.claude/shopify-verify.config.json` |
 | **shopify-section-planner** | `セクションを設計して` / `section plan` | 要件テキスト or Figma URL | `docs/c-*-spec.md` |
 | **theme-orchestrator** | `セクションを実装して` / `theme-orchestrator` | 設計書 or 直接指示 | `.liquid`, `.css`, `.js` ファイル |
+| **shopify-ds-component-search** | `c-*` 関連の編集 / brand mode 実装 / 「既存資産確認」 (theme-orchestrator Phase 0 から自動呼び出し) | プロジェクトの `snippets/c-*.liquid`, `assets/c-*.css`, Figma 📦 Components | 流用可能な snippet / BEM / Figma node の早見表 + DS トークン一覧 |
 | **shopify-schema-validator** | theme-orchestrator から自動呼び出し | `.liquid` ファイル | コンソールエラーレポート |
 | **shopify-theme-brand-layer** | `Brand 層を作りたい` / `brand-*.css 作って` / `Figma デザインをテーマに反映` / `テーマアップデートに耐える上書き方法` | Figma URL + 既存テーマ | `assets/brand-*.css` + `snippets/brand-icons.liquid` + `document/design-system.md` |
 | **shopify-flow-builder** | `Shopify Flow 作って` / `Order paid トリガー` / `Scheduled time Flow` / `販売開始日で自動公開` / `顧客MF自動更新` / `クーポン使用検知` / `.flow ファイル` | トリガー要件 + Run Code ロジック or Get list バッチ要件 | `.flow` JSON テンプレート + 構造ドキュメント + Visual Builder 構築手順 |
@@ -383,6 +384,8 @@ skills/
 │       ├── implementation-guide.md
 │       ├── modification-guide.md
 │       └── css-js-guide.md
+├── shopify-ds-component-search/  既存c-*資産・Figma Components洗い出し (Phase 0)
+│   └── SKILL.md
 ├── shopify-schema-validator/   Schema検証
 │   ├── SKILL.md
 │   ├── scripts/validate_schema.py
