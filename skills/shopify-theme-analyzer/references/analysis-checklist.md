@@ -29,6 +29,12 @@
 - [ ] パディング実装パターン（インラインスタイル + Schema設定）
 - [ ] ブロック反復パターン
 
+## theme blocks（Horizon 世代）
+
+- [ ] テーマルート `blocks/` ディレクトリの有無（存在すれば theme blocks 採用テーマと判定）
+- [ ] `blocks/*.liquid` の一覧（名前 + 用途）
+- [ ] セクション schema での `{"type": "@theme"}` 使用状況
+
 ## その他
 
 - [ ] グリッドシステム（クラス名、カラム数指定方法）
@@ -38,6 +44,7 @@
 
 | テーマ | 特徴 |
 |--------|------|
+| Horizon | theme blocks 全面採用（`blocks/` ディレクトリ）, 2025年以降の新規ストア標準（Dawn 後継）, セクション追加時は theme blocks 活用を優先検討 |
 | Dawn | BEM, stylesheet_tag, CSS custom properties, カスタム要素 |
 | Prestige | OOCSS寄り, Flickity, CSS Grid |
 | Impulse | BEM変形, Alpine.js, Swiper |
