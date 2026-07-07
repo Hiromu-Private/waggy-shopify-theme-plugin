@@ -86,6 +86,9 @@ VALID_VIDEO_ACCEPT = {"youtube", "vimeo"}
 MAX_LIST_LIMIT = 50
 MAX_RANGE_STEPS = 101
 MIN_RANGE_STEPS = 2  # Shopify requires at least 3 distinct values: min, intermediate, max
+MAX_BLOCKS_LIMIT = 50  # Shopify's hard limit of 50 blocks per section; max_blocks may only lower it
+MAX_SECTION_NAME_LENGTH = 25  # longer names may be truncated/rejected by the theme editor
+COLOR_DEFAULT_RE = re.compile(r"^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})|rgba?\([^)]*\))$")
 
 
 class SchemaError:
@@ -115,6 +118,14 @@ def validate_setting(setting: dict, path: str) -> list[SchemaError]:
         errors.append(SchemaError("error", f"Unknown setting type: '{stype}'", path))
         return errors
 
+    # visible_if (conditional settings): a string containing a {{ ... }} Liquid expression
+    if "visible_if" in setting:
+        visible_if = setting["visible_if"]
+        if not isinstance(visible_if, str):
+            errors.append(SchemaError("error", "'visible_if' must be a string containing a {{ ... }} Liquid expression", path))
+        elif "{{" not in visible_if or "}}" not in visible_if:
+            errors.append(SchemaError("warning", "'visible_if' should contain a {{ ... }} Liquid expression (e.g. \"{{ section.settings.show_x }}\")", path))
+
     # Sidebar settings (header/paragraph) have different rules
     if stype in ("header", "paragraph"):
         if "content" not in setting:
@@ -137,6 +148,22 @@ def validate_setting(setting: dict, path: str) -> list[SchemaError]:
     # Empty string default for text/textarea/liquid types
     if stype in ("text", "textarea", "liquid") and setting.get("default") == "":
         errors.append(SchemaError("error", f"'{stype}' default cannot be empty string (remove 'default' key instead)", spath))
+
+    # Default value type checks
+    if "default" in setting:
+        default = setting["default"]
+        if stype in ("text", "textarea") and not isinstance(default, str):
+            errors.append(SchemaError("error", f"'{stype}' default must be a string, got: {json.dumps(default)}", spath))
+        if stype == "checkbox" and not isinstance(default, bool):
+            errors.append(SchemaError("error", f"checkbox default must be a boolean true/false (without quotes), got: {json.dumps(default)}", spath))
+        if stype == "number" and (isinstance(default, bool) or not isinstance(default, (int, float))):
+            errors.append(SchemaError("error", f"number default must be a number, not a string, got: {json.dumps(default)}", spath))
+        if stype == "color" and (not isinstance(default, str) or not COLOR_DEFAULT_RE.match(default)):
+            errors.append(SchemaError("warning", f"color default {json.dumps(default)} is not a recognized color format (#RGB, #RRGGBB, rgb() or rgba())", spath))
+
+    # color_scheme without default implicitly depends on the first scheme
+    if stype == "color_scheme" and "default" not in setting:
+        errors.append(SchemaError("warning", "color_scheme has no 'default' — the section will implicitly fall back to the first color scheme (set one explicitly)", spath))
 
     # Range validation
     if stype == "range":
@@ -267,36 +294,62 @@ def _validate_options(setting: dict, path: str, errors: list[SchemaError]):
     if default is not None:
         valid_values = {opt.get("value") for opt in options if isinstance(opt, dict)}
         if default not in valid_values:
-            errors.append(SchemaError("warning", f"default '{default}' not in options values", path))
+            errors.append(SchemaError("error", f"default '{default}' not in options values", path))
 
 
-def validate_block(block: dict, path: str) -> list[SchemaError]:
+def validate_block(block: dict, path: str, accepts_theme_blocks: bool = False,
+                   theme_block_types: set | None = None) -> list[SchemaError]:
     """Validate a single block definition."""
     errors = []
 
     if "type" not in block:
         errors.append(SchemaError("error", "Block missing 'type'", path))
-    if "name" not in block and block.get("type") != "@app":
-        errors.append(SchemaError("error", "Block missing 'name'", path))
 
     btype = block.get("type", "<unknown>")
     bpath = f"{path}[{btype}]"
 
-    # @app blocks don't accept limit
-    if btype == "@app" and "limit" in block:
-        errors.append(SchemaError("error", "@app blocks do not accept 'limit'", bpath))
+    # @app / @theme entries take no 'name'; their settings live in the app/theme block itself
+    if btype in ("@app", "@theme"):
+        if "settings" in block:
+            errors.append(SchemaError("error", f"'{btype}' blocks cannot define 'settings' (settings belong to the app/theme block itself)", bpath))
+        if btype == "@app" and "limit" in block:
+            errors.append(SchemaError("error", "@app blocks do not accept 'limit'", bpath))
+        return errors
+
+    if "name" not in block:
+        if "settings" in block:
+            errors.append(SchemaError("error", "Block missing 'name'", bpath))
+        elif theme_block_types is not None and btype in theme_block_types:
+            pass  # verified theme block reference: /blocks/<type>.liquid exists
+        elif not accepts_theme_blocks:
+            # A type-only entry may reference a theme block in /blocks (theme blocks
+            # generation) — can't always verify from the schema alone, so don't hard-fail
+            checked = f" (no /blocks/{btype}.liquid found either)" if theme_block_types is not None else ""
+            errors.append(SchemaError(
+                "warning",
+                f"Block '{btype}' has no 'name' — valid only if it references a theme block in /blocks; locally defined blocks require 'name'{checked}",
+                bpath,
+            ))
+        # With '@theme' present, type-only entries are the documented
+        # "recommended theme blocks" pattern — nothing to flag
 
     # Validate block settings
     settings = block.get("settings", [])
+    if not isinstance(settings, list):
+        errors.append(SchemaError("error", "Block 'settings' must be an array", bpath))
+        return errors
     setting_ids = set()
     for i, setting in enumerate(settings):
+        if not isinstance(setting, dict):
+            errors.append(SchemaError("error", f"settings[{i}] must be an object", bpath))
+            continue
         stype = setting.get("type", "")
         if stype in ("header", "paragraph"):
             errors.extend(validate_setting(setting, bpath))
             continue
 
         sid = setting.get("id", "")
-        if sid in setting_ids:
+        if sid and sid in setting_ids:
             errors.append(SchemaError("error", f"Duplicate setting id: '{sid}'", bpath))
         setting_ids.add(sid)
         errors.extend(validate_setting(setting, bpath))
@@ -304,14 +357,106 @@ def validate_block(block: dict, path: str) -> list[SchemaError]:
     return errors
 
 
-def validate_schema(schema: dict, filepath: str = "") -> list[SchemaError]:
-    """Validate a complete section schema."""
+def _validate_preset_settings(psettings: Any, known_ids: set, path: str, errors: list[SchemaError]):
+    """Validate a preset's settings object against the section's setting ids."""
+    if psettings is None:
+        return
+    if not isinstance(psettings, dict):
+        errors.append(SchemaError("error", "preset 'settings' must be an object mapping setting ids to values", path))
+        return
+    for key in psettings:
+        if key not in known_ids:
+            errors.append(SchemaError("error", f"preset setting '{key}' does not match any section setting id", path))
+
+
+def _validate_preset_blocks(pblocks: Any, block_order: Any, path: str,
+                            defined_types: set, local_setting_ids: dict,
+                            lenient: bool, errors: list[SchemaError],
+                            theme_block_types: set | None = None):
+    """Validate preset blocks (array or hash form), recursing into nested blocks.
+
+    `lenient` means "unknown types are warnings, not errors" — set when the
+    surrounding context is theme-block territory ('@theme' declared, or the
+    parent preset block is itself a theme block reference), because the set of
+    acceptable types then lives outside this section's schema.
+    """
+    if isinstance(pblocks, dict):
+        # Hash form: {"block-id": {...}} with optional sibling "block_order"
+        if block_order is not None:
+            if not isinstance(block_order, list):
+                errors.append(SchemaError("error", "'block_order' must be an array of block ids", path))
+            else:
+                for bid in block_order:
+                    if bid not in pblocks:
+                        errors.append(SchemaError("error", f"block_order id '{bid}' not found in 'blocks'", path))
+        entries = [(f"{path}.blocks.{bid}", b) for bid, b in pblocks.items()]
+    elif isinstance(pblocks, list):
+        entries = [(f"{path}.blocks[{i}]", b) for i, b in enumerate(pblocks)]
+    else:
+        errors.append(SchemaError("error", "preset 'blocks' must be an array or an object", path))
+        return
+
+    for bpath, block in entries:
+        if not isinstance(block, dict):
+            errors.append(SchemaError("error", "preset block must be an object", bpath))
+            continue
+
+        bsettings = block.get("settings")
+        if bsettings is not None and not isinstance(bsettings, dict):
+            errors.append(SchemaError("error", "preset block 'settings' must be an object mapping setting ids to values", bpath))
+            bsettings = None
+
+        btype = block.get("type")
+        if not isinstance(btype, str) or not btype:
+            errors.append(SchemaError("error", "preset block missing 'type'", bpath))
+        elif btype in ("@app", "@theme"):
+            pass  # app blocks / theme block placeholders are always acceptable
+        elif btype in defined_types:
+            if bsettings and btype in local_setting_ids:
+                for key in bsettings:
+                    if key not in local_setting_ids[btype]:
+                        errors.append(SchemaError("error", f"preset block setting '{key}' does not match any setting id of block '{btype}'", bpath))
+        elif theme_block_types is not None and btype in theme_block_types:
+            pass  # verified theme block: /blocks/<type>.liquid exists
+        elif lenient:
+            if theme_block_types is not None:
+                errors.append(SchemaError("warning", f"preset block type '{btype}' is not defined in this section and no /blocks/{btype}.liquid exists — likely a broken reference", bpath))
+            else:
+                errors.append(SchemaError("warning", f"preset block type '{btype}' is not defined in this section — assuming it is a theme block from /blocks", bpath))
+        else:
+            checked = f" (no /blocks/{btype}.liquid found either)" if theme_block_types is not None else ""
+            errors.append(SchemaError("error", f"preset block type '{btype}' is not defined in this section's blocks{checked}", bpath))
+
+        # Theme blocks generation allows statically nested blocks inside presets.
+        # A nested tree under anything but a locally defined block is governed by
+        # the referenced theme/app block's own schema, which we can't see here.
+        if "blocks" in block:
+            child_lenient = lenient or not (isinstance(btype, str) and btype in local_setting_ids)
+            _validate_preset_blocks(
+                block.get("blocks"), block.get("block_order"), bpath,
+                defined_types, local_setting_ids, child_lenient, errors, theme_block_types,
+            )
+
+
+def validate_schema(schema: dict, filepath: str = "",
+                    theme_block_types: set | None = None) -> list[SchemaError]:
+    """Validate a complete section schema.
+
+    theme_block_types: file stems of <theme>/blocks/*.liquid when known.
+    Used only to *silence* theme-block-reference diagnostics — never to
+    escalate severity.
+    """
     errors = []
     prefix = filepath or "schema"
 
     # Required: name
     if "name" not in schema:
         errors.append(SchemaError("error", "Schema missing required 'name' attribute", prefix))
+    else:
+        name = schema["name"]
+        # Translation keys (t:...) are resolved by Shopify at runtime
+        if isinstance(name, str) and not name.startswith("t:") and len(name) > MAX_SECTION_NAME_LENGTH:
+            errors.append(SchemaError("warning", f"Section name is {len(name)} characters (recommended max {MAX_SECTION_NAME_LENGTH} — the theme editor may truncate or reject longer names)", prefix))
 
     # Tag validation
     if "tag" in schema:
@@ -324,27 +469,47 @@ def validate_schema(schema: dict, filepath: str = "") -> list[SchemaError]:
             errors.append(SchemaError("error", f"Section limit must be 1 or 2, got: {schema['limit']}", prefix))
 
     # Section settings
+    settings_list = schema.get("settings", [])
+    if not isinstance(settings_list, list):
+        errors.append(SchemaError("error", "'settings' must be an array", prefix))
+        settings_list = []
     section_setting_ids = set()
-    for setting in schema.get("settings", []):
+    for i, setting in enumerate(settings_list):
+        if not isinstance(setting, dict):
+            errors.append(SchemaError("error", f"settings[{i}] must be an object", prefix))
+            continue
         stype = setting.get("type", "")
         if stype in ("header", "paragraph"):
             errors.extend(validate_setting(setting, f"{prefix}.settings"))
             continue
         sid = setting.get("id", "")
-        if sid in section_setting_ids:
+        if sid and sid in section_setting_ids:
             errors.append(SchemaError("error", f"Duplicate section setting id: '{sid}'", prefix))
         section_setting_ids.add(sid)
         errors.extend(validate_setting(setting, f"{prefix}.settings"))
 
     # Blocks validation
     blocks = schema.get("blocks", [])
+    if not isinstance(blocks, list):
+        errors.append(SchemaError("error", "'blocks' must be an array", prefix))
+        blocks = []
+    accepts_theme_blocks = any(isinstance(b, dict) and b.get("type") == "@theme" for b in blocks)
     block_types = set()
     block_names = set()
+    theme_entries = 0
+    has_local_named_block = False
     for i, block in enumerate(blocks):
+        if not isinstance(block, dict):
+            errors.append(SchemaError("error", f"blocks[{i}] must be an object", prefix))
+            continue
         btype = block.get("type", "")
         bname = block.get("name", "")
 
-        if btype != "@app":
+        if btype == "@theme":
+            theme_entries += 1
+            if theme_entries == 2:
+                errors.append(SchemaError("error", "Duplicate '@theme' entry in blocks (declare it once)", prefix))
+        elif btype != "@app":
             if btype in block_types:
                 errors.append(SchemaError("error", f"Duplicate block type: '{btype}'", prefix))
             block_types.add(btype)
@@ -352,19 +517,58 @@ def validate_schema(schema: dict, filepath: str = "") -> list[SchemaError]:
             if bname and bname in block_names:
                 errors.append(SchemaError("error", f"Duplicate block name: '{bname}'", prefix))
             block_names.add(bname)
+            if bname:
+                has_local_named_block = True
 
-        errors.extend(validate_block(block, f"{prefix}.blocks"))
+        errors.extend(validate_block(block, f"{prefix}.blocks", accepts_theme_blocks, theme_block_types))
+
+    if accepts_theme_blocks and has_local_named_block:
+        errors.append(SchemaError(
+            "warning",
+            "Section declares '@theme' but also defines local blocks with 'name' — sections can't support locally defined blocks and theme blocks at the same time",
+            prefix,
+        ))
 
     # max_blocks validation
     if "max_blocks" in schema:
         mb = schema["max_blocks"]
-        if not isinstance(mb, int) or mb < 1:
+        if not isinstance(mb, int) or isinstance(mb, bool) or mb < 1:
             errors.append(SchemaError("error", f"max_blocks must be a positive integer", prefix))
+        elif mb > MAX_BLOCKS_LIMIT:
+            errors.append(SchemaError("error", f"max_blocks cannot exceed {MAX_BLOCKS_LIMIT} (Shopify's block limit per section)", prefix))
 
     # Presets validation
-    for i, preset in enumerate(schema.get("presets", [])):
+    defined_block_types = {
+        b.get("type") for b in blocks
+        if isinstance(b, dict) and b.get("type") and not str(b.get("type")).startswith("@")
+    }
+    local_block_setting_ids = {}
+    for b in blocks:
+        if not (isinstance(b, dict) and b.get("type") and "name" in b):
+            continue  # only locally defined blocks have knowable setting ids
+        bsettings = b.get("settings", [])
+        local_block_setting_ids[b["type"]] = {
+            s.get("id") for s in bsettings if isinstance(s, dict) and s.get("id")
+        } if isinstance(bsettings, list) else set()
+
+    presets = schema.get("presets", [])
+    if not isinstance(presets, list):
+        errors.append(SchemaError("error", "'presets' must be an array", prefix))
+        presets = []
+    for i, preset in enumerate(presets):
+        ppath = f"{prefix}.presets[{i}]"
+        if not isinstance(preset, dict):
+            errors.append(SchemaError("error", f"Preset[{i}] must be an object", prefix))
+            continue
         if "name" not in preset:
             errors.append(SchemaError("error", f"Preset[{i}] missing 'name'", prefix))
+        _validate_preset_settings(preset.get("settings"), section_setting_ids, ppath, errors)
+        if "blocks" in preset:
+            _validate_preset_blocks(
+                preset.get("blocks"), preset.get("block_order"), ppath,
+                defined_block_types, local_block_setting_ids, accepts_theme_blocks, errors,
+                theme_block_types,
+            )
 
     # enabled_on / disabled_on mutual exclusion
     if "enabled_on" in schema and "disabled_on" in schema:
@@ -403,7 +607,14 @@ def validate_file(filepath: str) -> list[SchemaError]:
     if not isinstance(schema, dict):
         return [SchemaError("error", "Schema must be a JSON object", str(path))]
 
-    return validate_schema(schema, path.name)
+    # Theme blocks live in <theme root>/blocks/*.liquid — collect their file
+    # stems so type-only theme block references can be verified, not guessed
+    theme_block_types = None
+    blocks_dir = path.resolve().parent.parent / "blocks"
+    if path.resolve().parent.name == "sections" and blocks_dir.is_dir():
+        theme_block_types = {p.stem for p in blocks_dir.glob("*.liquid")}
+
+    return validate_schema(schema, path.name, theme_block_types)
 
 
 def main():

@@ -6,16 +6,16 @@ Source: https://shopify.dev/docs/storefronts/themes/architecture/settings/input-
 
 | Type | Required Attrs | default | Notes |
 |------|---------------|---------|-------|
-| text | id, label | optional | Empty string `""` is INVALID |
-| textarea | id, label | optional | Empty string `""` is INVALID |
-| number | id, label | optional | Must be numeric, not string |
+| text | id, label | optional | Empty string `""` is INVALID; must be a string (error) |
+| textarea | id, label | optional | Empty string `""` is INVALID; must be a string (error) |
+| number | id, label | optional | Must be numeric, not string — `"5"` is INVALID (error) |
 | range | id, label, min, max, **default** | **required** | step defaults to 1; min 2 steps (≥3 distinct values), max 101 steps |
-| select | id, label, options | optional | options need value+label |
-| radio | id, label, options | optional | First option if unspecified |
-| checkbox | id, label | optional | Defaults to false |
-| color | id, label | optional | |
+| select | id, label, options | optional | options need value+label; default must match an options value (error) |
+| radio | id, label, options | optional | First option if unspecified; default must match an options value (error) |
+| checkbox | id, label | optional | Defaults to false; must be boolean `true`/`false`, not `"true"` (error) |
+| color | id, label | optional | `#RGB`/`#RRGGBB`/`rgb()`/`rgba()` — other formats flagged (warning) |
 | color_background | id, label | optional | |
-| color_scheme | id, label | **required** | Must match color_scheme_group |
+| color_scheme | id, label | recommended (warning if missing) | Must match color_scheme_group; without default the section implicitly depends on the first scheme |
 | font_picker | id, label, **default** | **required** | Must be valid font identifier |
 | image_picker | id, label | **NOT supported** | |
 | video | id, label | **NOT supported** | Shopify-hosted video |
@@ -41,7 +41,31 @@ Source: https://shopify.dev/docs/storefronts/themes/architecture/settings/input-
 | header | content | N/A | Sidebar only (non-input) |
 | paragraph | content | N/A | Sidebar only (non-input) |
 
+## Conditional settings (`visible_if`)
+
+Any input setting can carry a `visible_if` attribute (added late 2024): a **string containing a `{{ ... }}` Liquid expression**, e.g.
+
+```json
+{ "type": "text", "id": "cta_label", "label": "CTA label",
+  "visible_if": "{{ section.settings.show_cta }}" }
+```
+
+- Non-string value → error. String without `{{ ... }}` → warning
+- Can reference `section.settings.*`, `block.settings.*`, `settings.*`
+- Cannot access runtime/resolved data source values; resource-based settings don't support it
+
 ## Common Pitfalls
+
+### checkbox/number defaults must be typed literals
+```json
+// BAD - strings are rejected by Shopify
+{ "type": "checkbox", "id": "show", "label": "Show", "default": "true" }
+{ "type": "number", "id": "count", "label": "Count", "default": "5" }
+
+// GOOD
+{ "type": "checkbox", "id": "show", "label": "Show", "default": true }
+{ "type": "number", "id": "count", "label": "Count", "default": 5 }
+```
 
 ### text/textarea with empty default
 ```json
