@@ -1,11 +1,14 @@
 ---
 name: shopify-ds-component-search
-description: "Shopify テーマで brand 系 c-* セクション・スニペット・CSS を実装する前に、既存資産（流用可能な c-* snippet・BEM ブロック・Figma Components）を必ず列挙する事前確認スキル。Figma + DS を持つテーマ（ALLUP-SHOP 等）で重複実装を防ぐ。自動発火タイミング: 「c-* セクション作成」「{% render 'c-...' %} を書く」「assets/c-*.css を新規作成」「design_version=brand のセクション編集」「pill ボタン/eyebrow/カード/ヘッダー等の brand UI 追加」「Figma Components 由来のコンポーネント実装」「ALLUP DS / ブランドデザイン / brand mode 実装」を検知したら、コードを書く前に必ず実行。明示的呼出: /shopify-ds-component-search"
+description: "Shopify テーマで brand 系 c-* セクション・スニペット・CSS を実装する前に、既存資産（案件横断アセットライブラリ・流用可能な c-* snippet・BEM ブロック・Figma Components）を必ず列挙する事前確認スキル。重複実装を防ぐ。自動発火タイミング: 「c-* セクション作成」「{% render 'c-...' %} を書く」「assets/c-*.css を新規作成」「design_version=brand のセクション編集」「pill ボタン/eyebrow/カード/ヘッダー等の brand UI 追加」「Figma Components 由来のコンポーネント実装」「ブランドデザイン / brand mode 実装」「既存資産確認」を検知したら、コードを書く前に必ず実行。明示的呼出: /shopify-ds-component-search"
 ---
 
 # Shopify DS Component Search — 既存資産事前確認スキル
 
-Figma 正本 + デザインシステムを持つ Shopify テーマ（ALLUP-SHOP 等）で、brand 系 UI 実装前に**既存資産を必ず洗い出す**ためのスキル。
+brand 系 UI 実装前に**既存資産を必ず洗い出す**ためのスキル。検索は 2 層:
+
+1. **中央アセットライブラリ**（案件横断。過去案件から回収済みの資産）
+2. **現在のプロジェクト**（c-* snippet / BEM / Figma Components）
 
 ## このスキルが解決する問題
 
@@ -18,6 +21,17 @@ Figma 正本 + デザインシステムを持つ Shopify テーマ（ALLUP-SHOP 
 ## 起動時のアクション
 
 ユーザーが「brand UI を実装したい」と意図したタイミング（明示呼出 or 自動発火）で、以下を**順番に**実行する:
+
+### 0. 中央アセットライブラリの検索（案件横断）
+
+```bash
+ASSETS_DIR="${SHOPIFY_ASSETS_DIR:-$HOME/Developer/Waggy/shopify-assets}"
+[ -f "$ASSETS_DIR/INDEX.md" ] && grep -i "<実装したいUIのキーワード>" "$ASSETS_DIR/INDEX.md"
+```
+
+- キーワードは複数試す（例: pill ボタンなら `pill` / `button` / `view-all` / `cta`）
+- ヒットしたら `$ASSETS_DIR/cards/{カード名}.md` を読み、「使い方」「汎用化メモ」を確認。実コードは `files:` に列挙された `$ASSETS_DIR/snippets/` 内
+- ライブラリ未設置（INDEX.md 不在）なら静かにスキップして Step 1 へ（エラーにしない）
 
 ### 1. `snippets/c-*.liquid` の列挙
 
@@ -41,33 +55,35 @@ grep -hE "^\.c-[a-z][a-z0-9-]*" /path/to/project/assets/c-*.css | sort -u
 
 ### 3. Figma 📦 Components ページの取得
 
-ユーザープロジェクトに該当する Figma fileKey が memory / reference にあれば取得する。
-ALLUP-SHOP の場合: `mcp__figma__get_metadata` で fileKey `aeeoz4ciQYve6jW8ByGYy0` / nodeId `2021:2` を読み、各コンポーネント名と node-id を一覧化。
+Figma fileKey は次の優先順で解決する（ハードコード禁止）:
+
+1. `docs/theme-profile.md` に Figma ファイルの記載があればそれを使う
+2. ユーザーがこの会話で Figma URL を共有していればそこから抽出
+3. どちらも無ければ**この Step はスキップ**し、出力にその旨を明記（ユーザーに URL を求めてもよい）
+
+fileKey が解決できたら `mcp__figma__get_metadata` で Components ページ（📦 等の命名）を読み、各コンポーネント名と node-id を一覧化。
 
 ### 4. 早見表として出力
 
 以下フォーマットでユーザーに提示:
 
 ```markdown
-## 流用可能な c-* 資産（プロジェクト: ALLUP-SHOP）
+## 流用可能な資産（プロジェクト: {プロジェクト名}）
 
-| カテゴリ | snippet | CSS class | Figma node | 用途 |
-|---|---|---|---|---|
-| ボタン | `c-view-all` | `.c-view-all` | (c-button 2021:10) | 全 brand section の「すべて見る」pill |
-| カード | `c-collection-card` | `.c-collection-card` | 2056:29 | コレクション一覧の各カード |
-| カード | `c-product-card` | `.c-product-card` | 2051:68 | 商品カード |
-| ニュース | `c-news-item` | `.c-news-item` | 2057:37 | ニュース行 |
-| ... | ... | ... | ... | ... |
+| 出所 | カテゴリ | snippet / カード | CSS class | Figma node | 用途 |
+|---|---|---|---|---|---|
+| 📦 中央ライブラリ | ボタン | `pill-view-all-button`（カード） | — | — | pill 型「すべて見る」ボタン。汎用化済み |
+| 案件内 | ボタン | `c-view-all` | `.c-view-all` | (c-button {node-id}) | 全 brand section の「すべて見る」pill |
+| 案件内 | カード | `c-product-card` | `.c-product-card` | {node-id} | 商品カード |
+| ... | ... | ... | ... | ... | ... |
 
 ## DS トークン（assets では `var(--*)` で参照）
 
-主要トークンは `snippets/c-css-tokens.liquid` で定義。
-- 色: `--color-brand-primary`, `--color-text-onbrand`, `--color-surface-1`, ...
-- スペース: `--space-1`〜`--space-7`（4px刻み）
-- 半径: `--radius-sm` / `--radius-md` / `--radius-lg` / `--radius-pill`
-- タイポ: `--text-body` / `--text-small` / `--text-caption` / `--text-h2` / `--text-h3`
-- モーション: `--duration-fast` / `--easing-standard`
+主要トークンの定義場所（例: `snippets/c-css-tokens.liquid`）と、実際に定義されている
+トークン名（色 / スペース / 半径 / タイポ / モーション）を**そのプロジェクトの実物から**列挙する。
 ```
+
+（表の内容は実在の検索結果のみ。プレースホルダのまま出力しない。中央ライブラリのヒットは `📦 中央ライブラリ` 行として区別し、カード名とカードパスを示す）
 
 ### 5. 流用可能性の判定
 
@@ -95,6 +111,7 @@ ALLUP-SHOP の場合: `mcp__figma__get_metadata` で fileKey `aeeoz4ciQYve6jW8By
 
 ## 関連
 
+- `/shopify-asset-harvest` — 書き込み側。実装完了時に資産を中央ライブラリへ回収する（このスキルの Step 0 が読むデータはそこで蓄積される）
 - `/shopify-theme-analyzer` — テーマ全体の分析（より重い）
 - `/theme-orchestrator` — 実装本体のワークフロー
 - `/shopify-section-planner` — 新規セクション設計

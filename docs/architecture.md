@@ -17,7 +17,7 @@ graph TB
     end
 
     subgraph Workflow["🔨 テーマ開発ワークフロー層"]
-        Waggy["**waggy-shopify-theme-plugin**<br/>by waggy (自作)<br/>━━━━━━━━━━━<br/>4 skills + 1 agent + 3 hooks<br/>━━━━━━━━━━━<br/>🔄 analyze → plan → implement → verify<br/>🤖 Playwright 自動検証<br/>⚙️ Hook 自動発火"]
+        Waggy["**waggy-shopify-theme-plugin**<br/>by waggy (自作)<br/>━━━━━━━━━━━<br/>9 skills + 1 agent + 3 hooks<br/>━━━━━━━━━━━<br/>🔄 analyze → plan → implement → verify<br/>🤖 Playwright 自動検証<br/>⚙️ Hook 自動発火"]
     end
 
     subgraph Operation["📦 ストア運用層"]
@@ -49,7 +49,7 @@ graph TB
 | **提供元** | Shopify公式 | waggy (自作) | 40rty社 |
 | **対象タスク** | API設計・GraphQL・Liquid記法・ドキュメント検索 | テーマ実装ワークフロー丸ごと | ストア運営・在庫・受注・顧客管理 |
 | **発火モード** | 受動的（呼ばれた時だけ） | **能動的**（hook で自動起動） | 受動的（呼ばれた時だけ） |
-| **構成** | 19 skills | 4 skills + 1 agent + 3 hooks | 63 skills (10 categories) |
+| **構成** | 19 skills | 9 skills + 1 agent + 3 hooks | 63 skills (10 categories) |
 | **言語** | 英語 | **日本語** | 英語 |
 | **依存** | スタンドアロン | **shopify-ai-toolkit に依存**（validate.mjs を呼ぶ） | スタンドアロン |
 | **得意領域** | 知識・公式仕様・lint | テーマ実装 + 検証 + 自動化 | Admin API 経由のストア操作 |
@@ -68,9 +68,9 @@ graph TB
 
 ---
 
-## 2. waggy-shopify-theme-plugin ワークフロー（analyze → plan → implement → verify）
+## 2. waggy-shopify-theme-plugin 主要ワークフロー（analyze → plan → implement → verify）
 
-開発者が `.liquid` セクションを 1 つ作るときの自動化フロー。
+開発者が `.liquid` セクションを 1 つ作るときの自動化フロー。図は 9 スキルのうちコアパイプライン（analyzer → planner → orchestrator → schema-validator）と検証系 Hook / Agent の連携を示す。図に含まれない 5 スキル（theme-init / ds-component-search / asset-harvest / theme-brand-layer / flow-builder）は後述の「コンポーネント早見表」を参照。
 
 ```mermaid
 flowchart TD
@@ -79,14 +79,14 @@ flowchart TD
     Start --> SessionStart["**SessionStart hook**<br/>shopify-theme-context.sh<br/>━━━━━━━━━━━<br/>theme-profile.md を Claude に注入"]
 
     SessionStart --> Q{プロジェクト初回？}
-    Q -->|Yes| Analyzer["📊 **shopify-theme-analyzer**<br/>(skill)<br/>━━━━━━━━━━━<br/>CSS命名規則・ブレークポイント・<br/>再利用コンポーネントを抽出<br/>↓<br/>document/theme-profile.md 生成"]
+    Q -->|Yes| Analyzer["📊 **shopify-theme-analyzer**<br/>(skill)<br/>━━━━━━━━━━━<br/>CSS命名規則・ブレークポイント・<br/>再利用コンポーネントを抽出<br/>↓<br/>docs/theme-profile.md 生成"]
     Q -->|No| ProfileCheck{theme-profile.md<br/>存在 & 30日以内？}
 
     Analyzer --> ProfileCheck
     ProfileCheck -->|❌ 古い| Analyzer
     ProfileCheck -->|✅ OK| WorkType{何をする？}
 
-    WorkType -->|新規セクション設計| Planner["📐 **shopify-section-planner**<br/>(skill)<br/>━━━━━━━━━━━<br/>テキスト or Figma 入力 → 要件抽出<br/>既存コンポーネント流用設計<br/>Shopify Dev Docs MCP で仕様検証<br/>↓<br/>document/c-{name}-spec.md 生成"]
+    WorkType -->|新規セクション設計| Planner["📐 **shopify-section-planner**<br/>(skill)<br/>━━━━━━━━━━━<br/>テキスト or Figma 入力 → 要件抽出<br/>既存コンポーネント流用設計<br/>Shopify Dev Docs MCP で仕様検証<br/>↓<br/>docs/c-{name}-spec.md 生成"]
     WorkType -->|既存セクション修正| Orchestrator
     WorkType -->|設計書ベース実装| Orchestrator
 
@@ -126,10 +126,15 @@ flowchart TD
 | **Hook** | `shopify-theme-context.sh` | SessionStart | プロジェクトのテーマ情報を Claude に注入 |
 | **Hook** | `shopify-verify-record.sh` | PostToolUse (Write/Edit) | 編集ファイルをキューに記録 |
 | **Hook** | `shopify-verify-trigger.sh` | Stop | キューに編集があれば verifier 起動 |
+| **Skill** | `shopify-theme-init` | 明示呼び出し | プロジェクト構造・ignore 整備、ゴミ整理（analyzer の前段） |
 | **Skill** | `shopify-theme-analyzer` | 明示呼び出し | テーマ全体分析 → `theme-profile.md` |
 | **Skill** | `shopify-section-planner` | 明示呼び出し | 新規セクション設計書作成 |
 | **Skill** | `theme-orchestrator` | 明示呼び出し | 実装オーケストレーション |
+| **Skill** | `shopify-ds-component-search` | orchestrator Phase 0 から自動 / 明示 | 既存 `c-*` 資産・Figma Components・中央ライブラリの洗い出し |
+| **Skill** | `shopify-asset-harvest` | 実装完了時に orchestrator が提案 / 明示 | 実装資産を汎用化して案件横断ライブラリへ回収（ds-component-search と対） |
 | **Skill** | `shopify-schema-validator` | 自動 or 明示 | schema 構文 10 ルール検証 |
+| **Skill** | `shopify-theme-brand-layer` | 明示呼び出し | Brand 層（`brand-*`）の設計・実装（横断スキル） |
+| **Skill** | `shopify-flow-builder` | 明示呼び出し | Shopify Flow 構築（テーマ開発とは別軸） |
 | **Agent** | `shopify-verifier` | Stop hook 経由 | Liquid + Playwright 自動検証 |
 
 ### 設計原則
@@ -146,8 +151,8 @@ flowchart TD
 ```mermaid
 flowchart LR
     SourceCode[📁 テーマソース<br/>sections/ assets/ snippets/]
-    Profile[📝 document/<br/>theme-profile.md]
-    Spec[📋 document/<br/>c-name-spec.md]
+    Profile[📝 docs/<br/>theme-profile.md]
+    Spec[📋 docs/<br/>c-name-spec.md]
     Files[💾 .liquid<br/>.css / .js]
     Queue[🗂️ verify queue]
     Report[📊 検証レポート]
@@ -167,4 +172,4 @@ flowchart LR
 
 - [README.md](../README.md) — プラグインの概要・インストール・コマンド一覧
 - 各 skill の SKILL.md — `skills/{skill-name}/SKILL.md`
-- [shopify-verify.config.json](../README.md#configuration) — プロジェクト固有設定（preview URL、viewport、forbidden_files）
+- [shopify-verify.config.json](../README.md#shopify-verifyconfigjson) — プロジェクト固有設定（preview URL、viewport、forbidden_files）
