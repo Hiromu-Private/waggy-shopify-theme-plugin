@@ -14,6 +14,12 @@
 # Bypass keywords (in last user message):
 #   skip:  skip-verify | --no-verify | 確認不要 | 検証スキップ
 #   force: verify-please | verify-now | 検証して
+#
+# Decision order (first hit wins): no config / stop_hook_active / no recorded
+# edits → allow; skip keyword → allow; force keyword → flag only; empty
+# preview_url → allow (verifier can't run without a URL, even forced);
+# manual Playwright tool_use on the preview host this turn → allow;
+# then mode gating (manual/smart/auto) → block with reason.
 
 set -euo pipefail
 
@@ -44,9 +50,12 @@ fi
 # No scratch file or empty → no shopify edits recorded.
 [[ ! -s "$SCRATCH" ]] && exit 0
 
-# ─── Read mode + last user message ────────────────────────
+# ─── Read config values + last user message ───────────────
 VERIFY_MODE=$(jq -r '.verify_mode // "smart"' "$CONFIG_FILE" 2>/dev/null)
 SMART_DIFF_THRESHOLD=$(jq -r '.smart_diff_threshold // 50' "$CONFIG_FILE" 2>/dev/null)
+MAX_VERIFY_CYCLES=$(jq -r '.max_verify_cycles // 2' "$CONFIG_FILE" 2>/dev/null)
+MAX_VERIFY_CYCLES=${MAX_VERIFY_CYCLES:-2}
+PREVIEW_URL=$(jq -r '.preview_url // empty' "$CONFIG_FILE" 2>/dev/null)
 
 LAST_USER_MSG=""
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
@@ -78,14 +87,32 @@ if printf '%s\n' "$LAST_USER_MSG" | grep -qiE '(verify-please|verify-now|検証�
   FORCE_VERIFY=1
 fi
 
+# ─── Case 3c: No preview URL configured ───────────────────
+# The verifier cannot run without a URL, even when forced → allow stop.
+# Checked before the smart heuristics so projects without a preview_url
+# never pay the git status/diff cost on every turn.
+if [[ -z "$PREVIEW_URL" ]]; then
+  rm -f "$SCRATCH"
+  exit 0
+fi
+
 # ─── Case 4: Manual Playwright already used ───────────────
 # Main agent already ran Playwright manually this turn → don't double-verify.
+# Strict match: require the tool_use JSON structure (not a mere text mention)
+# plus the preview host in the same window, so Playwright usage unrelated to
+# the theme does not suppress verification.
 if [[ "$FORCE_VERIFY" -eq 0 && -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
-  RECENT_PLAYWRIGHT=$(tail -40 "$TRANSCRIPT_PATH" 2>/dev/null | grep -c "mcp__playwright__browser_navigate" 2>/dev/null || true)
-  RECENT_PLAYWRIGHT=${RECENT_PLAYWRIGHT:-0}
-  if [[ "$RECENT_PLAYWRIGHT" -gt 0 ]]; then
-    rm -f "$SCRATCH"
-    exit 0
+  RECENT_WINDOW=$(tail -300 "$TRANSCRIPT_PATH" 2>/dev/null || true)
+  NAV_TOOL_USE_RE='"name"[[:space:]]*:[[:space:]]*"mcp__playwright__browser_navigate"'
+  if [[ "$RECENT_WINDOW" =~ $NAV_TOOL_USE_RE ]]; then
+    # Host part of preview_url (scheme, then port/path/query stripped).
+    PREVIEW_HOST="${PREVIEW_URL#*://}"
+    PREVIEW_HOST="${PREVIEW_HOST%%[/:?]*}"
+    # Empty host (malformed URL) → structure-only detection, as before.
+    if [[ -z "$PREVIEW_HOST" || "$RECENT_WINDOW" == *"$PREVIEW_HOST"* ]]; then
+      rm -f "$SCRATCH"
+      exit 0
+    fi
   fi
 fi
 
@@ -175,13 +202,6 @@ if [[ "$FORCE_VERIFY" -eq 0 ]]; then
 fi
 
 # ─── Block stop and request verification ──────────────────
-PREVIEW_URL=$(jq -r '.preview_url // empty' "$CONFIG_FILE" 2>/dev/null)
-if [[ -z "$PREVIEW_URL" ]]; then
-  # No preview URL configured → skip verification silently.
-  rm -f "$SCRATCH"
-  exit 0
-fi
-
 # Build a markdown file list for the reason message.
 FILES_LIST=$(awk '{printf "  - %s\n", $0}' "$SCRATCH")
 
@@ -208,7 +228,7 @@ Preview URL: $PREVIEW_URL
 Call: Agent(subagent_type=shopify-theme-dev:shopify-verifier) with a prompt that includes:
 1. The file list above
 2. The preview URL above
-3. Instructions: "Verify these edits via Playwright Chromium. Auto-fix any errors detected (max 2 cycles). Return a structured report."
+3. Instructions: "Verify these edits via Playwright Chromium. Auto-fix any errors detected (max ${MAX_VERIFY_CYCLES} cycles). Return a structured report."
 
 After the verifier completes its work, try to stop again — the hook will allow it (stop_hook_active will be true).
 

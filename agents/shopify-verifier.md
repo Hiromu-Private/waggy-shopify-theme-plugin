@@ -46,6 +46,7 @@ cat "$CLAUDE_PROJECT_DIR/.claude/shopify-verify.config.json"
 - `forbidden_files` — 絶対に編集してはいけないファイル
 - `template_url_mappings` — ストア固有のテンプレート→URLマッピング
 - `noise_baselines` — ストア固有の既知ノイズパターン
+- `universal_noise` — Shopify共通ノイズ（普遍ノイズ）を自動除外するか。キー省略時は `true`
 
 ---
 
@@ -185,7 +186,9 @@ python3 "$SCHEMA_VALIDATOR" \
 
 ### Noise Filter
 
-**Shopify共通ノイズ（全ストア共通）:**
+**Shopify共通ノイズ（全ストア共通）— config の `universal_noise` で制御:**
+
+`universal_noise` が `true`（既定。キー省略時も `true` 扱い）なら、以下の普遍ノイズ（Shopify標準機構やサードパーティスクリプト由来の console warning / 404 等）を自動除外する。`false` なら普遍ノイズも除外せず報告に含める（デバッグ用）。
 
 | パターン | 原因 |
 |---|---|
@@ -196,13 +199,14 @@ python3 "$SCHEMA_VALIDATOR" \
 
 **ストア固有ノイズ:**
 
-`shopify-verify.config.json` の `noise_baselines` 配列を読み、各エントリの `pattern` フィールドでマッチング。
+`shopify-verify.config.json` の `noise_baselines` 配列を読み、各エントリの `pattern` フィールドでマッチング。こちらは `universal_noise` の値に関わらず常に適用する。
 
 **判断フロー:**
 1. 検証時のエラー一覧を取得
-2. 共通ノイズ + ストア固有ノイズに合致するエラーを除外
-3. 残ったエラーがあれば → それが本当の問題
-4. 残ったエラーがなければ → OK
+2. `universal_noise` が `true`（既定）なら共通ノイズに合致するエラーを除外。`false` なら除外しない（デバッグ用に普遍ノイズも報告へ残す）
+3. ストア固有ノイズ（`noise_baselines`）に合致するエラーを除外
+4. 残ったエラーがあれば → それが本当の問題
+5. 残ったエラーがなければ → OK
 
 ---
 
