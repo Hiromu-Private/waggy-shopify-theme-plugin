@@ -67,6 +67,8 @@ Claude Code のチャットで以下を実行:
 | **shopify-theme-brand-layer** | `Brand 層を作りたい` / `brand-*.css 作って` / `Figma デザインをテーマに反映` / `テーマアップデートに耐える上書き方法` | Figma URL + 既存テーマ | `assets/brand-*.css` + `snippets/brand-icons.liquid` + `docs/design-system.md` |
 | **shopify-flow-builder** | `Shopify Flow 作って` / `Order paid トリガー` / `Scheduled time Flow` / `販売開始日で自動公開` / `顧客MF自動更新` / `クーポン使用検知` / `.flow ファイル` | トリガー要件 + Run Code ロジック or Get list バッチ要件 | `.flow` JSON テンプレート + 構造ドキュメント + Visual Builder 構築手順 |
 | **shopify-asset-harvest** | `資産化して` / `asset harvest` / `ライブラリに登録して` / セクション実装完了・納品時 | このセッションで実装したテーマファイル | 案件横断アセットライブラリ（既定: `~/Developer/Waggy/shopify-assets`）への資産カード + INDEX 追記 |
+| **shopify-cv-tracking** | `CV計測` / `計測タグ` / `コンバージョン計測` / `アドエビス・adebis` / `カスタムピクセル` / `売上が合わない・計測値がズレる` | 計測要件（purchase / 会員登録 / カスタム CV） | 多通貨対応ピクセル・サードパーティフォーム CV タグの実装 + 検証チェックリスト |
+| **shopify-delivery-report** | `納品報告` / `報告文作って` / `クライアントに報告` / `進捗報告` / 実装完了時 | セッションの実装内容（git log / diff / 検証結果） | クライアント向け報告文（Slack / メール、クリップボード直行）+ 作業実績の記録 |
 
 **shopify-asset-harvest** は **shopify-ds-component-search と対をなす資産回収スキル**。実装完了時に成果物を機密スクラブ + 汎用化して案件横断アセットライブラリへ蓄積し、次案件の ds-component-search（Step 0: 中央ライブラリ検索）が流用候補として提示できるようにする。「書く（harvest）→ 引く（ds-component-search）」のループで案件をまたいだ再利用が回る。
 
@@ -188,7 +190,7 @@ monolith (❌)                  modular (✅)
 └──────────────────┘
 ```
 
-現行は 9 スキル構成。コアパイプラインの 5 スキル（init: 構造整備 → analyzer: 分析 → planner: 設計 → orchestrator: 実装 → schema-validator: 検証）に、横断・別軸の 4 スキル — ds-component-search（既存資産の洗い出し。orchestrator Phase 0 から自動呼び出し）、asset-harvest（実装資産の案件横断ライブラリへの回収。ds-component-search と対）、theme-brand-layer（Brand 層の設計・実装）、flow-builder（Shopify Flow 自動化）— を加えた形。
+現行は 11 スキル構成。コアパイプラインの 5 スキル（init: 構造整備 → analyzer: 分析 → planner: 設計 → orchestrator: 実装 → schema-validator: 検証）に、横断・別軸の 6 スキル — ds-component-search（既存資産の洗い出し。orchestrator Phase 0 から自動呼び出し）、asset-harvest（実装資産の案件横断ライブラリへの回収。ds-component-search と対）、theme-brand-layer（Brand 層の設計・実装）、flow-builder（Shopify Flow 自動化）、cv-tracking（CV 計測タグ / カスタムピクセルの実装と検証）、delivery-report（クライアント向け報告文の生成と実績記録）— を加えた形。
 
 **単一責任**: 各スキルが1つの明確な仕事を持つ。analyzer はテーマを読むだけ。planner は設計書を書くだけ。orchestrator は実装するだけ。validator は検証するだけ。
 
@@ -423,22 +425,32 @@ skills/
 │   └── templates/
 │       ├── design-system-skeleton.md  §0〜§12 章建てテンプレート
 │       └── brand-icons-template.liquid 5 アイコン case 雛形
-└── shopify-flow-builder/       Shopify Flow（.flow JSON）ゼロ構築スキル
+├── shopify-flow-builder/       Shopify Flow（.flow JSON）ゼロ構築スキル
+│   ├── SKILL.md
+│   ├── references/
+│   │   ├── triggers.md                       主要トリガー一覧と context
+│   │   ├── scheduled-time-trigger.md         Scheduled time + Get list バッチパターン (Basic 対応)
+│   │   ├── run-code-patterns.md              Run Code 中心の判定ロジック雛形 (Plus)
+│   │   ├── customer-metafield-actions.md     顧客MF更新アクションのパターン
+│   │   ├── product-channel-publish-actions.md 商品 Publish/Tag/status アクション (Basic 対応)
+│   │   ├── flow-export-versioning.md         .flow JSON の Git 管理運用
+│   │   └── anti-patterns.md                  Condition 階層化など典型ハマり所
+│   ├── templates/
+│   │   ├── order-paid-to-customer-mf.flow         Order paid → 顧客MF
+│   │   ├── order-created-discount-clear-mf.flow   Order created → Discount検知
+│   │   └── scheduled-channel-auto-publish.md      Scheduled time → チャネル自動公開 (構造ドキュメント)
+│   └── evals/
+│       └── evals.json                       発火・出力テストケース
+├── shopify-cv-tracking/        CV計測タグ / カスタムピクセル実装（多通貨・サードパーティフォーム対応）
+│   ├── SKILL.md
+│   └── references/
+│       ├── pixel-currency-patterns.md   presentment currency の罠と toJpy 換算パターン
+│       ├── third-party-form-cv.md       MutationObserver 方式のフォーム CV 計測
+│       └── verification-checklist.md    6 パターン検証・本番反映チェックリスト
+└── shopify-delivery-report/    クライアント向け納品報告文の生成 + 実績記録
     ├── SKILL.md
-    ├── references/
-    │   ├── triggers.md                       主要トリガー一覧と context
-    │   ├── scheduled-time-trigger.md         Scheduled time + Get list バッチパターン (Basic 対応)
-    │   ├── run-code-patterns.md              Run Code 中心の判定ロジック雛形 (Plus)
-    │   ├── customer-metafield-actions.md     顧客MF更新アクションのパターン
-    │   ├── product-channel-publish-actions.md 商品 Publish/Tag/status アクション (Basic 対応)
-    │   ├── flow-export-versioning.md         .flow JSON の Git 管理運用
-    │   └── anti-patterns.md                  Condition 階層化など典型ハマり所
-    ├── templates/
-    │   ├── order-paid-to-customer-mf.flow         Order paid → 顧客MF
-    │   ├── order-created-discount-clear-mf.flow   Order created → Discount検知
-    │   └── scheduled-channel-auto-publish.md      Scheduled time → チャネル自動公開 (構造ドキュメント)
-    └── evals/
-        └── evals.json                       発火・出力テストケース
+    └── references/
+        └── report-templates.md          Slack / メール向けテンプレと用語対訳
 
 hooks/
 ├── hooks.json                  Hook自動登録

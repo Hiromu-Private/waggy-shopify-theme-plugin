@@ -17,7 +17,7 @@ graph TB
     end
 
     subgraph Workflow["🔨 テーマ開発ワークフロー層"]
-        Waggy["**waggy-shopify-theme-plugin**<br/>by waggy (自作)<br/>━━━━━━━━━━━<br/>9 skills + 1 agent + 3 hooks<br/>━━━━━━━━━━━<br/>🔄 analyze → plan → implement → verify<br/>🤖 Playwright 自動検証<br/>⚙️ Hook 自動発火"]
+        Waggy["**waggy-shopify-theme-plugin**<br/>by waggy (自作)<br/>━━━━━━━━━━━<br/>11 skills + 1 agent + 3 hooks<br/>━━━━━━━━━━━<br/>🔄 analyze → plan → implement → verify<br/>🤖 Playwright 自動検証<br/>⚙️ Hook 自動発火"]
     end
 
     subgraph Operation["📦 ストア運用層"]
@@ -49,7 +49,7 @@ graph TB
 | **提供元** | Shopify公式 | waggy (自作) | 40rty社 |
 | **対象タスク** | API設計・GraphQL・Liquid記法・ドキュメント検索 | テーマ実装ワークフロー丸ごと | ストア運営・在庫・受注・顧客管理 |
 | **発火モード** | 受動的（呼ばれた時だけ） | **能動的**（hook で自動起動） | 受動的（呼ばれた時だけ） |
-| **構成** | 19 skills | 9 skills + 1 agent + 3 hooks | 63 skills (10 categories) |
+| **構成** | 19 skills | 11 skills + 1 agent + 3 hooks | 63 skills (10 categories) |
 | **言語** | 英語 | **日本語** | 英語 |
 | **依存** | スタンドアロン | **shopify-ai-toolkit に依存**（validate.mjs を呼ぶ） | スタンドアロン |
 | **得意領域** | 知識・公式仕様・lint | テーマ実装 + 検証 + 自動化 | Admin API 経由のストア操作 |
@@ -70,7 +70,7 @@ graph TB
 
 ## 2. waggy-shopify-theme-plugin 主要ワークフロー（analyze → plan → implement → verify）
 
-開発者が `.liquid` セクションを 1 つ作るときの自動化フロー。図は 9 スキルのうちコアパイプライン（analyzer → planner → orchestrator → schema-validator）と検証系 Hook / Agent の連携を示す。図に含まれない 5 スキル（theme-init / ds-component-search / asset-harvest / theme-brand-layer / flow-builder）は後述の「コンポーネント早見表」を参照。
+開発者が `.liquid` セクションを 1 つ作るときの自動化フロー。図は 11 スキルのうちコアパイプライン（analyzer → planner → orchestrator → schema-validator）と検証系 Hook / Agent の連携を示す。図に含まれない 7 スキル（theme-init / ds-component-search / asset-harvest / theme-brand-layer / flow-builder / cv-tracking / delivery-report）は後述の「コンポーネント早見表」を参照。
 
 ```mermaid
 flowchart TD
@@ -135,6 +135,8 @@ flowchart TD
 | **Skill** | `shopify-schema-validator` | 自動 or 明示 | schema 構文 10 ルール検証 |
 | **Skill** | `shopify-theme-brand-layer` | 明示呼び出し | Brand 層（`brand-*`）の設計・実装（横断スキル） |
 | **Skill** | `shopify-flow-builder` | 明示呼び出し | Shopify Flow 構築（テーマ開発とは別軸） |
+| **Skill** | `shopify-cv-tracking` | 明示呼び出し | CV 計測タグ / カスタムピクセルの実装と検証（別軸） |
+| **Skill** | `shopify-delivery-report` | 明示呼び出し / 実装完了時 | クライアント向け報告文生成 + 実績記録（別軸） |
 | **Agent** | `shopify-verifier` | Stop hook 経由 | Liquid + Playwright 自動検証 |
 
 ### 設計原則
