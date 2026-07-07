@@ -9,7 +9,7 @@ Source: https://shopify.dev/docs/storefronts/themes/architecture/settings/input-
 | text | id, label | optional | Empty string `""` is INVALID |
 | textarea | id, label | optional | Empty string `""` is INVALID |
 | number | id, label | optional | Must be numeric, not string |
-| range | id, label, min, max, **default** | **required** | step defaults to 1; max 101 steps |
+| range | id, label, min, max, **default** | **required** | step defaults to 1; min 2 steps (≥3 distinct values), max 101 steps |
 | select | id, label, options | optional | options need value+label |
 | radio | id, label, options | optional | First option if unspecified |
 | checkbox | id, label | optional | Defaults to false |
@@ -59,6 +59,21 @@ Source: https://shopify.dev/docs/storefronts/themes/architecture/settings/input-
 
 // GOOD
 { "type": "range", "id": "x", "label": "X", "min": 0, "max": 100, "step": 4, "default": 36 }
+
+// BAD - only 1 step ((2-1)/1=1), Shopify requires at least 2 steps (≥3 distinct values)
+{ "type": "range", "id": "cols", "label": "Cols", "min": 1, "max": 2, "step": 1, "default": 2 }
+
+// GOOD - for 2-value choices, use select instead
+{
+  "type": "select",
+  "id": "cols",
+  "label": "Cols",
+  "default": "2",
+  "options": [
+    { "value": "1", "label": "1" },
+    { "value": "2", "label": "2" }
+  ]
+}
 ```
 
 ### image_picker with default

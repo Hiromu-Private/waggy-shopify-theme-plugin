@@ -24,7 +24,7 @@ The script checks:
 - Required attributes per setting type
 - `default` value rules (empty string forbidden for text/textarea, restricted values for url/link_list)
 - Types that do NOT support `default` (image_picker, video, product, collection, page, blog, article)
-- `range` step/min/max/default consistency (max 101 steps)
+- `range` step/min/max/default consistency (min 2 steps / ≥3 distinct values, max 101 steps)
 - `select`/`radio` option structure and duplicate values
 - Block type/name uniqueness
 - Section setting ID uniqueness
@@ -61,7 +61,7 @@ If errors are found, fix them before proceeding.
 2. `image_picker`, `video`, `product`, `collection`, `page`, `blog`, `article`: `default` attribute **NOT supported**
 3. `font_picker`: `default` is **REQUIRED**
 4. `range`: default must satisfy `(default - min) % step == 0` and `min <= default <= max`
-5. `range`: max number of steps is 101: `(max - min) / step <= 101`
+5. `range`: number of steps must be `2 <= (max - min) / step <= 101` (at least 3 distinct values). For 2-value choices, use `select` instead.
 6. All block types and names must be **unique** within a section
 7. All setting IDs must be **unique** within each block and within section settings
 8. `enabled_on` and `disabled_on` **cannot coexist**

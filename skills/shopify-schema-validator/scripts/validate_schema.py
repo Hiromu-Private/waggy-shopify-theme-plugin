@@ -85,6 +85,7 @@ VALID_LINKLIST_DEFAULTS = {"main-menu", "footer"}
 VALID_VIDEO_ACCEPT = {"youtube", "vimeo"}
 MAX_LIST_LIMIT = 50
 MAX_RANGE_STEPS = 101
+MIN_RANGE_STEPS = 2  # Shopify requires at least 3 distinct values: min, intermediate, max
 
 
 class SchemaError:
@@ -217,6 +218,13 @@ def _validate_range(setting: dict, path: str, errors: list[SchemaError]):
             num_steps = (max_val - min_val) / step
             if num_steps > MAX_RANGE_STEPS:
                 errors.append(SchemaError("error", f"range has {num_steps:.0f} steps (max {MAX_RANGE_STEPS})", path))
+            if num_steps < MIN_RANGE_STEPS:
+                errors.append(SchemaError(
+                    "error",
+                    f"range has {num_steps:.0f} step(s) but Shopify requires at least {MIN_RANGE_STEPS} "
+                    f"(i.e. at least 3 distinct values). Consider using 'select' for 2-value choices.",
+                    path,
+                ))
 
         if default is not None:
             if not isinstance(default, (int, float)):
