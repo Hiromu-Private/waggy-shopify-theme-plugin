@@ -1,0 +1,27 @@
+#!/usr/bin/expect -f
+#
+# Claude Code 内蔵 Bash ツールから Shopify CLI (v4) の OAuth ログインを突破する。
+# 内蔵 Bash は pty を持たないため `shopify auth login` の対話プロンプト
+# （"Which account would you like to use?"）が isTTY() 判定で弾かれる。
+# expect で TTY をエミュレートしてアカウント選択を確定させる。
+#
+# 使い方（配布物は read-only の場所に置かれ得るので cp してから実行する）:
+#   cp <plugin>/skills/shopify-cli-auth/scripts/shopify-login.exp /tmp/shopify-login.exp
+#   chmod +x /tmp/shopify-login.exp
+#   /tmp/shopify-login.exp
+#   # 使い終わったら rm /tmp/shopify-login.exp
+#
+# 目的アカウントが先頭（デフォルトハイライト）でない場合:
+#   下の `send -- "\r"` の直前に `send -- "\x1b\[B"`（下矢印）を必要な回数だけ追加する。
+
+log_user 1
+set timeout 60
+set env(TERM) "xterm-256color"
+
+spawn -noecho shopify auth login
+stty rows 40 columns 120 < $spawn_out(slave,name)
+
+expect -re "Which account"
+sleep 3   ;# prompts ライブラリの入力ハンドラ準備待ち（早すぎると入力が捨てられる）
+send -- "\r"   ;# 先頭アカウント（デフォルトハイライト）を確定
+expect eof

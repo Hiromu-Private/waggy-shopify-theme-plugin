@@ -17,7 +17,8 @@
 金額系イベントは、通貨判定 + JPY 換算ヘルパーを**必ず**通す:
 
 ```javascript
-const TO_JPY_RATE = { JPY: 1, TWD: 4.96 };  // レートは四半期更新運用
+// レート値はプレースホルダ。実際の値は案件ごとに記入する（下記注記参照）
+const TO_JPY_RATE = { JPY: 1, TWD: /* 現在のレートを記入 */ 0 };  // レートは四半期更新運用
 function toJpy(money) {
   if (!money) return 0;
   const rate = TO_JPY_RATE[money.currencyCode || 'JPY'];
@@ -26,7 +27,7 @@ function toJpy(money) {
 // 使用例: amount: toJpy(event.data.checkout.totalPrice)
 ```
 
-> ⚠️ **`TWD: 4.96` は 2026Q2 時点の例。レート値はプロジェクトごとに必ず確認する**。扱う通貨の種類もストアの Markets 設定に合わせて増減させる。
+> ⚠️ **レート値はプロジェクトごとに必ず記入・確認する**（上のコードはプレースホルダ）。値は `window.Shopify.currency.rate` の逆数（Shopify 公式換算レート）を基準にし、四半期ごとに見直す。扱う通貨の種類もストアの Markets 設定に合わせて増減させる。
 
 ### 設計意図（変えてはいけないポイント）
 

@@ -69,6 +69,7 @@ Claude Code のチャットで以下を実行:
 | **shopify-asset-harvest** | `資産化して` / `asset harvest` / `ライブラリに登録して` / セクション実装完了・納品時 | このセッションで実装したテーマファイル | 案件横断アセットライブラリ（既定: `~/Developer/Waggy/shopify-assets`）への資産カード + INDEX 追記 |
 | **shopify-cv-tracking** | `CV計測` / `計測タグ` / `コンバージョン計測` / `アドエビス・adebis` / `カスタムピクセル` / `売上が合わない・計測値がズレる` | 計測要件（purchase / 会員登録 / カスタム CV） | 多通貨対応ピクセル・サードパーティフォーム CV タグの実装 + 検証チェックリスト |
 | **shopify-delivery-report** | `納品報告` / `報告文作って` / `クライアントに報告` / `進捗報告` / 実装完了時 | セッションの実装内容（git log / diff / 検証結果） | クライアント向け報告文（Slack / メール、クリップボード直行）+ 作業実績の記録 |
+| **shopify-cli-auth** | `アカウント切り替えて` / `auth login` / `don't have access エラー` / `新しいストアをセットアップ` / `ストア固定` / `shopify コマンドが見つからない` | ストア / アカウントの状況 | アカウント切替手順・`shopify.theme.toml` 固定・認証トラブル解決 + Claude Code 用 expect ログイン |
 
 **shopify-asset-harvest** は **shopify-ds-component-search と対をなす資産回収スキル**。実装完了時に成果物を機密スクラブ + 汎用化して案件横断アセットライブラリへ蓄積し、次案件の ds-component-search（Step 0: 中央ライブラリ検索）が流用候補として提示できるようにする。「書く（harvest）→ 引く（ds-component-search）」のループで案件をまたいだ再利用が回る。
 
@@ -190,7 +191,7 @@ monolith (❌)                  modular (✅)
 └──────────────────┘
 ```
 
-現行は 11 スキル構成。コアパイプラインの 5 スキル（init: 構造整備 → analyzer: 分析 → planner: 設計 → orchestrator: 実装 → schema-validator: 検証）に、横断・別軸の 6 スキル — ds-component-search（既存資産の洗い出し。orchestrator Phase 0 から自動呼び出し）、asset-harvest（実装資産の案件横断ライブラリへの回収。ds-component-search と対）、theme-brand-layer（Brand 層の設計・実装）、flow-builder（Shopify Flow 自動化）、cv-tracking（CV 計測タグ / カスタムピクセルの実装と検証）、delivery-report（クライアント向け報告文の生成と実績記録）— を加えた形。
+現行は 12 スキル構成。コアパイプラインの 5 スキル（init: 構造整備 → analyzer: 分析 → planner: 設計 → orchestrator: 実装 → schema-validator: 検証）に、横断・別軸の 7 スキル — ds-component-search（既存資産の洗い出し。orchestrator Phase 0 から自動呼び出し）、asset-harvest（実装資産の案件横断ライブラリへの回収。ds-component-search と対）、theme-brand-layer（Brand 層の設計・実装）、flow-builder（Shopify Flow 自動化）、cv-tracking（CV 計測タグ / カスタムピクセルの実装と検証）、delivery-report（クライアント向け報告文の生成と実績記録）、cli-auth（Shopify CLI のアカウント切替・認証・ストア固定）— を加えた形。
 
 **単一責任**: 各スキルが1つの明確な仕事を持つ。analyzer はテーマを読むだけ。planner は設計書を書くだけ。orchestrator は実装するだけ。validator は検証するだけ。
 
@@ -447,10 +448,14 @@ skills/
 │       ├── pixel-currency-patterns.md   presentment currency の罠と toJpy 換算パターン
 │       ├── third-party-form-cv.md       MutationObserver 方式のフォーム CV 計測
 │       └── verification-checklist.md    6 パターン検証・本番反映チェックリスト
-└── shopify-delivery-report/    クライアント向け納品報告文の生成 + 実績記録
+├── shopify-delivery-report/    クライアント向け納品報告文の生成 + 実績記録
+│   ├── SKILL.md
+│   └── references/
+│       └── report-templates.md          Slack / メール向けテンプレと用語対訳
+└── shopify-cli-auth/           Shopify CLI v4 のアカウント切替・認証・ストア固定
     ├── SKILL.md
-    └── references/
-        └── report-templates.md          Slack / メール向けテンプレと用語対訳
+    └── scripts/
+        └── shopify-login.exp            Claude Code から OAuth ログインを突破する expect
 
 hooks/
 ├── hooks.json                  Hook自動登録
