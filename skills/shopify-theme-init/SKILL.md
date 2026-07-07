@@ -183,7 +183,7 @@ git log --oneline -7
 | 1 | **shopify-theme-init** (本スキル) | プロジェクト構造と周辺ファイル整備 |
 | 2 | shopify-theme-analyzer | テーマ実装の構造分析（CSS/JS/コンポーネント） |
 | 3 | shopify-section-planner | セクション設計 |
-| 4 | shopify-dev | セクション実装 |
+| 4 | theme-orchestrator | セクション実装 |
 | 5 | shopify-schema-validator | Schema検証 |
 
 ## 命令例

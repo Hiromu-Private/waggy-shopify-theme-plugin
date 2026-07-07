@@ -44,7 +44,7 @@ Shopify テーマで「ブランドのデザイン仕様」を実装する時、
 2. **Figma 側**: Figma MCP `get_design_context` で対象ノードを取得し、デザイントークン（色 / 余白 / フォント / letter-spacing）を抽出
    - Figma 名と node ID を後で `design-system.md` に記録するため必ずメモ
 
-3. **既存ドキュメント確認**: プロジェクトに `document/design-system.md` / `document/theme-profile.md` があれば最初に読む。なければこのスキルの [templates/design-system-skeleton.md](templates/design-system-skeleton.md) から開始
+3. **既存ドキュメント確認**: プロジェクトに `docs/design-system.md` / `docs/theme-profile.md`（旧 `document/` 配下にある場合もフォールバックで確認）があれば最初に読む。なければこのスキルの [templates/design-system-skeleton.md](templates/design-system-skeleton.md) から開始
 
 ### Step 2: Layer 判断（どこに書くか決める）
 
@@ -81,7 +81,7 @@ Layer 3 で実装する場合の具体的なパターンは [references/override
 
 ### Step 5: ドキュメント反映
 
-実装した内容を `document/design-system.md` に記録する。ドキュメント構造は [templates/design-system-skeleton.md](templates/design-system-skeleton.md) のテンプレートに従う。
+実装した内容を `docs/design-system.md` に記録する。ドキュメント構造は [templates/design-system-skeleton.md](templates/design-system-skeleton.md) のテンプレートに従う。
 
 特に重要なのは:
 - §7（書き換え一覧）と §8（新規ファイル一覧）のチェックボックスを「✅ 適用済み YYYY-MM-DD」に更新

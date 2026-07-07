@@ -1,44 +1,8 @@
-# Schema設定タイプ リファレンス
+# Schema設定タイプ 設計ガイド
+
+**設定タイプの仕様（タイプ一覧・必須属性・default 可否・バリデーションルール・Common Pitfalls）の正本は [shopify-schema-validator/references/setting-types.md](../../shopify-schema-validator/references/setting-types.md)。** 仕様の確認はそちらを参照すること。本ファイルには planner 固有の「設計時にどのタイプを選ぶか」のガイダンスだけを置く。
 
 Source: https://shopify.dev/docs/storefronts/themes/architecture/settings/input-settings
-
-## 設定タイプ早見表
-
-| タイプ | 用途 | default | 注意 |
-|--------|------|---------|------|
-| text | 短いテキスト | 任意 | `""` は無効 |
-| textarea | 長いテキスト | 任意 | `""` は無効 |
-| number | 数値 | 任意 | 文字列NG |
-| range | スライダー | **必須** | step整合必須 |
-| select | ドロップダウン | 任意 | options必須 |
-| radio | ラジオ | 任意 | options必須 |
-| checkbox | ON/OFF | 任意 | デフォルトfalse |
-| color | カラーピッカー | 任意 | |
-| color_background | 背景色 | 任意 | |
-| color_scheme | カラースキーム | **必須** | "scheme-1" |
-| font_picker | フォント | **必須** | フォント識別子必須 |
-| image_picker | 画像 | **非対応** | |
-| video | Shopifyホスト動画 | **非対応** | |
-| video_url | YouTube/Vimeo | 任意 | accept必須 |
-| url | URL | 任意 | `/collections` or `/collections/all` のみ |
-| product | 商品 | **非対応** | |
-| product_list | 商品リスト | 任意 | limit max 50 |
-| collection | コレクション | **非対応** | |
-| collection_list | コレクションリスト | 任意 | limit max 50 |
-| page | ページ | **非対応** | |
-| blog | ブログ | **非対応** | |
-| article | 記事 | **非対応** | |
-| article_list | 記事リスト | 任意 | limit max 50 |
-| link_list | ナビメニュー | 任意 | `main-menu` or `footer` のみ |
-| richtext | リッチテキスト | 任意 | `<p>` or `<ul>` でラップ |
-| inline_richtext | インラインリッチ | 任意 | 改行なし |
-| html | HTML | 任意 | html/head/body 除去 |
-| liquid | Liquid | 任意 | Max 50KB |
-| metaobject | メタオブジェクト | 任意 | metaobject_type必須 |
-| metaobject_list | メタオブジェクトリスト | 任意 | metaobject_type必須 |
-| text_alignment | テキスト配置 | 任意 | `left`, `center`, `right` |
-| header | 見出し（非入力） | N/A | サイドバー表示のみ |
-| paragraph | 説明文（非入力） | N/A | サイドバー表示のみ |
 
 ## 設計時の使い分けガイド
 
@@ -57,13 +21,14 @@ Source: https://shopify.dev/docs/storefronts/themes/architecture/settings/input-
 | 商品選択 | product |
 | コレクション選択 | collection |
 
-## range タイプの制約
+## 設計時の注意（バリデーションに響く選択）
 
-- `default` は必須: `min <= default <= max`
-- step整合: `(default - min) % step === 0`
-- 最大ステップ数: `(max - min) / step <= 101`
+- **range は最低 2 ステップ（3 値以上）が必須**。`(max - min) / step` が 1 しかない（実質 2 値の）設定は Shopify に弾かれるため、**2 択は range でなく select で設計する**。上限は 101 ステップ。`default` は必須で、`min <= default <= max` かつ `(default - min) % step === 0` を満たす値にする
+- text / textarea を「初期値なし」にしたい場合は `"default": ""` ではなく default キー自体を省略する設計にする
+- image_picker / video / product / collection / page / blog / article は default を持てない。「初期画像を見せたい」等の要件は Liquid 側のプレースホルダ表示で設計する
 
-例:
+range の設計例:
+
 ```json
 {
   "type": "range",
@@ -111,33 +76,4 @@ Source: https://shopify.dev/docs/storefronts/themes/architecture/settings/input-
   { "value": "grid", "label": "グリッド" },
   { "value": "list", "label": "リスト" }
 ]}
-```
-
-## Common Pitfalls
-
-### text/textarea with empty default
-```json
-// BAD - Shopify rejects this
-{ "type": "text", "id": "desc", "label": "Description", "default": "" }
-
-// GOOD - Omit default entirely
-{ "type": "text", "id": "desc", "label": "Description" }
-```
-
-### range validation
-```json
-// BAD - default (5) is not a multiple of step (4) from min (0)
-{ "type": "range", "id": "x", "label": "X", "min": 0, "max": 100, "step": 4, "default": 5 }
-
-// GOOD
-{ "type": "range", "id": "x", "label": "X", "min": 0, "max": 100, "step": 4, "default": 36 }
-```
-
-### image_picker with default
-```json
-// BAD - image_picker does not support default
-{ "type": "image_picker", "id": "img", "label": "Image", "default": "something" }
-
-// GOOD
-{ "type": "image_picker", "id": "img", "label": "Image" }
 ```

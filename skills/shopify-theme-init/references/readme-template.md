@@ -21,7 +21,7 @@
 1. `shopify-theme-init` ─ プロジェクト構造とignore周りを整える（このファイルが生成された時点）
 2. `shopify-theme-analyzer` ─ テーマのCSS/JS/コンポーネント構造を分析
 3. `shopify-section-planner` ─ 新規セクションを設計
-4. `shopify-dev` ─ セクション実装
+4. `theme-orchestrator` ─ セクション実装
 5. `shopify-schema-validator` ─ Schema検証
 
 ## ローカル開発
