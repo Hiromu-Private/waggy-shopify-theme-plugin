@@ -7,6 +7,9 @@
 
 set -euo pipefail
 
+# jq is required for all parsing below; without it, degrade to a silent pass.
+command -v jq >/dev/null 2>&1 || exit 0
+
 INPUT=$(cat)
 SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // "unknown"')
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
@@ -27,16 +30,31 @@ CONFIG_FILE="$PROJECT_DIR/.claude/shopify-verify.config.json"
 [[ "$FILE_PATH" != "$PROJECT_DIR"/* ]] && exit 0
 
 # Strip project prefix to get relative path
-REL_PATH="${FILE_PATH#$PROJECT_DIR/}"
+REL_PATH="${FILE_PATH#"$PROJECT_DIR"/}"
 
 # ─── Dynamic path matching from config ────────────────────
 # Read shopify_paths from config and match against relative path.
+# Hand-written configs often omit shopify_paths; fall back to the
+# standard theme directories so edits are not silently ignored.
+PATTERNS=$(jq -r '.shopify_paths[]?' "$CONFIG_FILE" 2>/dev/null || true)
+if [[ -z "$PATTERNS" ]]; then
+  PATTERNS='sections/*.liquid
+snippets/*.liquid
+blocks/*.liquid
+templates/*.json
+layout/*.liquid
+config/*.json
+locales/*.json
+assets/*.css
+assets/*.js'
+fi
+
 MATCH=0
 while IFS= read -r pattern; do
   [[ -z "$pattern" ]] && continue
   # shellcheck disable=SC2053
   [[ "$REL_PATH" == $pattern ]] && MATCH=1 && break
-done < <(jq -r '.shopify_paths[]' "$CONFIG_FILE" 2>/dev/null)
+done <<< "$PATTERNS"
 
 [[ "$MATCH" -eq 0 ]] && exit 0
 

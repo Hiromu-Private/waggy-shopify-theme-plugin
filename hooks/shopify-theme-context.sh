@@ -22,7 +22,10 @@ analysis_date=$(grep -m1 '分析日' "$PROFILE" | sed 's/.*| *\([^|]*\) *|$/\1/'
 # --- 鮮度チェック (30日超で警告) ---
 freshness_warning=""
 if [ -n "$analysis_date" ]; then
-  analysis_epoch=$(date -j -f "%Y-%m-%d" "$analysis_date" "+%s" 2>/dev/null)
+  # BSD date (macOS) を先に試し、失敗したら GNU date (Linux) にフォールバック。
+  # 両方失敗した場合は analysis_epoch が空になり鮮度チェック自体をスキップする。
+  analysis_epoch=$(date -j -f "%Y-%m-%d" "$analysis_date" "+%s" 2>/dev/null \
+    || date -d "$analysis_date" "+%s" 2>/dev/null)
   current_epoch=$(date "+%s")
   if [ -n "$analysis_epoch" ]; then
     days_old=$(( (current_epoch - analysis_epoch) / 86400 ))
@@ -48,8 +51,14 @@ breakpoints=$(awk '/^### ブレークポイント/{found=1; next} found && /^\| 
 # --- 命名規則 ---
 naming=$(awk '/^### 命名規則/{found=1; next} found && /[^ ]/{print; exit}' "$PROFILE" | xargs)
 
-# --- CSSプレフィックス ---
-css_prefix=$(grep 'CSSプレフィックス' "$PROFILE" | head -1 | sed 's/CSSプレフィックス: *//')
+# --- 新規ファイルプレフィックス (「### "c-" プレフィックス」見出しから抽出) ---
+file_prefix=$(grep -m1 -E '^#{2,4} *"[^"]+" *プレフィックス' "$PROFILE" | sed 's/.*"\([^"]*\)".*/\1/')
+
+# --- セクションCSSスコープ規約 (プロファイルに記載がある場合のみ) ---
+css_scoping=""
+if grep -q '#shopify-section-' "$PROFILE"; then
+  css_scoping='#shopify-section-{{ section.id }}'
+fi
 
 # --- CSS読み込み方式 ---
 css_method=$(grep '^方式:' "$PROFILE" | head -1 | sed 's/方式: *//')
@@ -66,13 +75,12 @@ ${freshness_warning:+${freshness_warning}
 }
 Forbidden files: ${forbidden}
 Breakpoints: ${breakpoints}
-CSS prefix: ${css_prefix}
 Naming: ${naming}
 CSS method: ${css_method}
 Custom elements: ${elements}
-New file prefix: c- (sections/c-*.liquid, assets/c-*.css, snippets/c-*-*.liquid)
-CSS scoping: #shopify-section-{{ section.id }}
-
+${file_prefix:+New file prefix: ${file_prefix} (sections/${file_prefix}*.liquid, assets/${file_prefix}*.css, snippets/${file_prefix}*-*.liquid)
+}${css_scoping:+CSS scoping: ${css_scoping}
+}
 Full details: ${PROFILE_REL}
 Guided workflow: /theme-orchestrator
 EOF

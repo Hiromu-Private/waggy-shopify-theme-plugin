@@ -17,6 +17,9 @@
 
 set -euo pipefail
 
+# jq is required for all parsing below; without it, degrade to a silent pass.
+command -v jq >/dev/null 2>&1 || exit 0
+
 INPUT=$(cat)
 SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // "unknown"')
 STOP_ACTIVE=$(echo "$INPUT" | jq -r '.stop_hook_active // false')
@@ -47,18 +50,31 @@ SMART_DIFF_THRESHOLD=$(jq -r '.smart_diff_threshold // 50' "$CONFIG_FILE" 2>/dev
 
 LAST_USER_MSG=""
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
-  LAST_USER_MSG=$(jq -r 'select(.type=="user") | .message.content // empty' "$TRANSCRIPT_PATH" 2>/dev/null | tail -1)
+  # Transcript rows with type=="user" also include tool_result turns, meta rows
+  # and sub-agent (sidechain) prompts. Keep only real user input: flatten
+  # text-part arrays (tool_result parts drop out), discard empty results, and
+  # collapse newlines so one message = one line for tail -1.
+  LAST_USER_MSG=$(jq -r '
+    select(.type == "user")
+    | select(.isMeta != true and .isSidechain != true)
+    | .message.content
+    | if type == "string" then .
+      elif type == "array" then ([.[] | select(.type? == "text") | .text] | join(" "))
+      else empty end
+    | select(. != "")
+    | gsub("[\n\r]"; " ")
+  ' "$TRANSCRIPT_PATH" 2>/dev/null | tail -1 || true)
 fi
 
 # ─── Case 3a: Negative bypass (skip keyword) ──────────────
-if echo "$LAST_USER_MSG" | grep -qiE '(skip-verify|--no-verify|確認不要|検証スキップ)'; then
+if printf '%s\n' "$LAST_USER_MSG" | grep -qiE '(skip-verify|--no-verify|確認不要|検証スキップ)'; then
   rm -f "$SCRATCH"
   exit 0
 fi
 
 # ─── Case 3b: Positive bypass (force keyword) ─────────────
 FORCE_VERIFY=0
-if echo "$LAST_USER_MSG" | grep -qiE '(verify-please|verify-now|検証して)'; then
+if printf '%s\n' "$LAST_USER_MSG" | grep -qiE '(verify-please|verify-now|検証して)'; then
   FORCE_VERIFY=1
 fi
 
@@ -180,7 +196,7 @@ else
 fi
 
 REASON=$(cat <<EOF
-Shopify theme files were edited in this turn. You MUST run the shopify-verifier sub-agent before completing.
+Shopify theme files were edited in this turn. You MUST run the shopify-theme-dev:shopify-verifier sub-agent before completing.
 
 ${TRIGGER_NOTE}
 
@@ -189,7 +205,7 @@ $FILES_LIST
 
 Preview URL: $PREVIEW_URL
 
-Call: Agent(subagent_type=shopify-verifier) with a prompt that includes:
+Call: Agent(subagent_type=shopify-theme-dev:shopify-verifier) with a prompt that includes:
 1. The file list above
 2. The preview URL above
 3. Instructions: "Verify these edits via Playwright Chromium. Auto-fix any errors detected (max 2 cycles). Return a structured report."
