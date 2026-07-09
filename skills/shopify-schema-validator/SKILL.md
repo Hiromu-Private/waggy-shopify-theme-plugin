@@ -15,8 +15,8 @@ The skill runs from a plugin install (any cwd), so resolve the script path dynam
 
 ```bash
 VALIDATOR=$(find "$HOME/.claude/plugins" -path '*shopify-schema-validator/scripts/validate_schema.py' 2>/dev/null | head -1)
-# Fallback: development repo checkout
-[ -z "$VALIDATOR" ] && VALIDATOR="/Users/wh-dev/Developer/Waggy/waggy-shopify-theme-plugin/skills/shopify-schema-validator/scripts/validate_schema.py"
+# Fallback: this skill's own base directory (shown at skill invocation) — <base-dir>/scripts/validate_schema.py
+[ -z "$VALIDATOR" ] && VALIDATOR="<この SKILL.md の base directory>/scripts/validate_schema.py"
 
 # Single file
 python3 "$VALIDATOR" path/to/section.liquid
