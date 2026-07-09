@@ -147,6 +147,7 @@ flowchart TD
 2. **独立実行** — フローを途中から呼べる。`/theme-orchestrator` だけでも、`/shopify-section-planner` だけでも使える
 3. **コンテキスト効率** — 重い分析結果は `theme-profile.md` にシリアライズ、後続スキルは読むだけ
 4. **責務分離** — Skill = ユーザー発火 / Hook = ランタイム発火 / Agent = Hook → 隔離プロセス
+5. **配布前提** — リポジトリは PUBLIC で第三者が使う。個人情報・マシン固有パス・私物ファイル（`~/.claude/rules/` や個人 memory）への依存をスキルに書かない。既定値は実行者の環境（`git config` / `gh auth status` / 環境変数 / memory の grep 探索）から導出し、個人の慣例は各実行者の memory 側に置く。リリース前チェックは `docs/release-checklist.md` の配布前提チェックで機械的に検出する
 
 ---
 

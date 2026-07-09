@@ -112,7 +112,9 @@ store = "<handle>.myshopify.com"
 
 コミット: `chore: shopify.theme.toml で store を <handle> に固定`
 
-これが無いと shopify-push-guard hook が照合できない（`~/.claude/rules/shopify-cli.md` の3原則③）。
+store 固定が無いと `theme push` が CLI のアクティブアカウント任せになり、複数ストアを
+扱う環境では誤ストアへの push を機械的に防げない。push 前照合系の hook（push-guard 等）を
+運用している場合、この toml が照合先になる。
 
 ### Step 7: テーマ分析
 
