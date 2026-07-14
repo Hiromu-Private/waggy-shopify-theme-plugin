@@ -70,7 +70,7 @@ graph TB
 
 ## 2. waggy-shopify-theme-plugin 主要ワークフロー（analyze → plan → implement → verify）
 
-開発者が `.liquid` セクションを 1 つ作るときの自動化フロー。図は 13 スキルのうちコアパイプライン（analyzer → planner → orchestrator → schema-validator）と検証系 Hook / Agent の連携を示す。図に含まれない 9 スキル（store-bootstrap / theme-init / ds-component-search / asset-harvest / theme-brand-layer / flow-builder / cv-tracking / delivery-report / cli-auth）は後述の「コンポーネント早見表」を参照。
+開発者が `.liquid` セクションを 1 つ作るときの自動化フロー。図は 14 スキルのうちコアパイプライン（analyzer → planner → orchestrator → schema-validator）と検証系 Hook / Agent の連携を示す。図に含まれない 10 スキル（store-bootstrap / theme-init / ds-component-search / asset-harvest / theme-brand-layer / flow-builder / cv-tracking / delivery-report / cli-auth / blog-publish）は後述の「コンポーネント早見表」を参照。
 
 ```mermaid
 flowchart TD
@@ -138,6 +138,7 @@ flowchart TD
 | **Skill** | `shopify-cv-tracking` | 明示呼び出し | CV 計測タグ / カスタムピクセルの実装と検証（別軸） |
 | **Skill** | `shopify-delivery-report` | 明示呼び出し / 実装完了時 | クライアント向け報告文生成 + 実績記録（別軸） |
 | **Skill** | `shopify-cli-auth` | 明示呼び出し | Shopify CLI v4 のアカウント切替・認証・ストア固定（別軸） |
+| **Skill** | `shopify-blog-publish` | 明示呼び出し | Drive 原稿 → 本文変換・KV 生成・記事公開・内部リンク・検証のワンショット実行（別軸） |
 | **Skill** | `shopify-store-bootstrap` | 明示呼び出し | 新案件立ち上げのフルセットアップ（theme-init / analyzer を内包する上位オーケストレーター） |
 | **Agent** | `shopify-verifier` | Stop hook 経由 | Liquid + Playwright 自動検証 |
 
