@@ -9,7 +9,7 @@
       "name": "shopify-theme-dev",
       "source": "./",
       "description": "Shopify theme development: analyze → plan → implement → verify",
-      "version": "0.7.0",
+      "version": "0.7.1",
       "author": { "name": "waggy" },
       "license": "MIT"
     }
