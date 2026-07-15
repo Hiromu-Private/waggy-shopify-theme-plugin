@@ -26,10 +26,15 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:8377/kv.html   # 200 を
 
 **Playwright MCP の場合**: `browser_resize(1600, 1100)` → `browser_navigate("http://localhost:8377/kv.html")` → `browser_take_screenshot(type: png, scale: "css")`。`scale: "css"` 必須（device だと Retina で 2〜3 倍サイズになる）。
 
-**playwright-cli の場合**:
+**playwright-cli の場合**（セッション型 CLI。screenshot に viewport 指定は無く、事前に resize する）:
 
 ```bash
-playwright-cli screenshot --viewport-size=1600,1100 http://localhost:8377/kv.html kv-out.png
+playwright-cli open about:blank
+playwright-cli resize 1600 1100
+playwright-cli goto http://localhost:8377/kv.html
+sleep 2   # Google Fonts の読込を待つ
+playwright-cli screenshot --filename=kv-out.png   # カレントディレクトリに保存される
+playwright-cli close
 ```
 
 撮影後、HTTP サーバを止める（`kill %1` または `pkill -f "http.server 8377"`）。
