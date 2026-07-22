@@ -71,7 +71,7 @@ Claude Code のチャットで以下を実行:
 | **shopify-cv-tracking** | `CV計測` / `計測タグ` / `コンバージョン計測` / `アドエビス・adebis` / `カスタムピクセル` / `売上が合わない・計測値がズレる` | 計測要件（purchase / 会員登録 / カスタム CV） | 多通貨対応ピクセル・サードパーティフォーム CV タグの実装 + 検証チェックリスト |
 | **shopify-delivery-report** | `納品報告` / `報告文作って` / `クライアントに報告` / `進捗報告` / 実装完了時 | セッションの実装内容（git log / diff / 検証結果） | クライアント向け報告文（Slack / メール、クリップボード直行）+ 作業実績の記録 |
 | **shopify-cli-auth** | `アカウント切り替えて` / `auth login` / `don't have access エラー` / `新しいストアをセットアップ` / `ストア固定` / `shopify コマンドが見つからない` | ストア / アカウントの状況 | アカウント切替手順・`shopify.theme.toml` 固定・認証トラブル解決 + Claude Code 用 expect ログイン |
-| **shopify-blog-publish** | `ブログを公開して` / `ブログをアップ` / `新しい記事が上がった` / `blog publish` | Drive の原稿フォルダ + `_publish-config/`（ストア別設定） | 本文HTML変換 → KVサムネ（既存 or テンプレ自動生成）→ Files 登録 → 記事公開 → 相互内部リンク → ストアフロント検証まで一気通貫 |
+| **shopify-blog-publish** | `ブログを公開して` / `ブログをアップ` / `新しい記事が上がった` / `blog publish` / `予約投稿して` | Drive の原稿フォルダ + `_publish-config/`（ストア別設定） | 本文HTML変換 → KVサムネ（既存 or テンプレ自動生成）→ Files 登録 → 記事公開（即時 or 予約）→ 相互内部リンク → ストアフロント検証まで一気通貫。config に chatShare があれば社内チャット共有の予約投稿まで |
 
 **shopify-asset-harvest** は **shopify-ds-component-search と対をなす資産回収スキル**。実装完了時に成果物を機密スクラブ + 汎用化して案件横断アセットライブラリへ蓄積し、次案件の ds-component-search（Step 0: 中央ライブラリ検索）が流用候補として提示できるようにする。「書く（harvest）→ 引く（ds-component-search）」のループで案件をまたいだ再利用が回る。
 
